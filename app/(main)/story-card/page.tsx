@@ -147,7 +147,17 @@ function StoryCardContent() {
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: null,
+        allowTaint: false,
+        backgroundColor: '#1a6b9c',
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Remove border-radius for export and fix styles
+          const clonedElement = clonedDoc.querySelector('[data-card]') as HTMLElement
+          if (clonedElement) {
+            clonedElement.style.borderRadius = '0'
+            clonedElement.style.fontFamily = '"Outfit", sans-serif'
+          }
+        }
       })
 
       canvas.toBlob(async (blob) => {
@@ -183,7 +193,9 @@ function StoryCardContent() {
       canvas = await html2canvas(cardRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: null,
+        allowTaint: false,
+        backgroundColor: '#1a6b9c',
+        logging: false,
       })
     }
 
@@ -326,13 +338,16 @@ function StoryCardContent() {
           /* Pro Scoreboard Template - Australian Open Style */
           <div
             ref={cardRef}
-            className="mx-auto w-64 h-[450px] rounded-3xl overflow-hidden shadow-2xl relative"
-            style={{
-              backgroundImage: `url('/ao-bg.png')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
+            data-card
+            className="mx-auto w-64 h-[450px] rounded-3xl overflow-hidden shadow-2xl relative bg-[#1a6b9c]"
           >
+            {/* Background Image */}
+            <img
+              src="/ao-bg.png"
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              crossOrigin="anonymous"
+            />
             {/* Dark Overlay for better text readability */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40"></div>
 
@@ -356,9 +371,9 @@ function StoryCardContent() {
 
                 {/* Player Row - You */}
                 <div className="bg-white px-3 py-2.5 flex items-center gap-2 border-b border-gray-100">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 ring-1 ring-gray-200">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                      <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" crossOrigin="anonymous" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">👤</div>
                     )}
@@ -389,7 +404,7 @@ function StoryCardContent() {
 
                 {/* Opponent Row */}
                 <div className="bg-white px-3 py-2.5 flex items-center gap-2 rounded-b-xl">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 ring-1 ring-gray-200">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                     <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">👤</div>
                   </div>
                   <div className="flex-1 min-w-0">
