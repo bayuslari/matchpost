@@ -13,6 +13,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: '#16a34a',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
@@ -21,9 +22,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen">
-        <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl">
+    <html lang="en" className="h-full">
+      <body className="h-full">
+        <div className="max-w-md mx-auto min-h-full">
           {children}
         </div>
       </body>

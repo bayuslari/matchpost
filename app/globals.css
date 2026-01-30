@@ -9,8 +9,41 @@
     @apply box-border;
   }
 
+  html {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    /* Prevent overscroll bounce on iOS */
+    overscroll-behavior: none;
+  }
+
+  /* App-like full screen pages */
+  .app-screen {
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+  }
+
+  /* Fixed height screens (no scroll) */
+  .app-screen-fixed {
+    height: 100dvh;
+    height: -webkit-fill-available;
+    overflow: hidden;
+  }
+
+  /* Scrollable screens */
+  .app-screen-scroll {
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -44,4 +77,12 @@
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Safe area insets for notched phones */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
