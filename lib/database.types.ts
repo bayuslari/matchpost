@@ -51,8 +51,11 @@ export type Database = {
           user_id: string
           match_type: 'singles' | 'doubles'
           opponent_name: string
+          opponent_user_id: string | null
           partner_name: string | null
+          partner_user_id: string | null
           opponent_partner_name: string | null
+          opponent_partner_user_id: string | null
           location: string | null
           played_at: string
           result: 'win' | 'loss' | 'draw' | null
@@ -66,8 +69,11 @@ export type Database = {
           user_id: string
           match_type?: 'singles' | 'doubles'
           opponent_name: string
+          opponent_user_id?: string | null
           partner_name?: string | null
+          partner_user_id?: string | null
           opponent_partner_name?: string | null
+          opponent_partner_user_id?: string | null
           location?: string | null
           played_at?: string
           result?: 'win' | 'loss' | 'draw' | null
@@ -81,8 +87,11 @@ export type Database = {
           user_id?: string
           match_type?: 'singles' | 'doubles'
           opponent_name?: string
+          opponent_user_id?: string | null
           partner_name?: string | null
+          partner_user_id?: string | null
           opponent_partner_name?: string | null
+          opponent_partner_user_id?: string | null
           location?: string | null
           played_at?: string
           result?: 'win' | 'loss' | 'draw' | null
@@ -95,6 +104,27 @@ export type Database = {
           {
             foreignKeyName: "matches_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_opponent_user_id_fkey"
+            columns: ["opponent_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_partner_user_id_fkey"
+            columns: ["partner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_opponent_partner_user_id_fkey"
+            columns: ["opponent_partner_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -262,6 +292,13 @@ export type GroupMemberUpdate = Database['public']['Tables']['group_members']['U
 // Extended types with relations
 export type MatchWithSets = Match & {
   match_sets: MatchSet[]
+}
+
+export type MatchWithProfiles = Match & {
+  match_sets: MatchSet[]
+  opponent_profile?: Profile | null
+  partner_profile?: Profile | null
+  opponent_partner_profile?: Profile | null
 }
 
 export type GroupWithMembers = Group & {

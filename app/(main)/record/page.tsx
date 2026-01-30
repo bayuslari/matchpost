@@ -1,14 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, Loader2, Plus, Minus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import UserSearchInput from '@/components/user-search-input'
+import type { Profile } from '@/lib/database.types'
 
 export default function RecordMatchPage() {
   const router = useRouter()
   const supabase = createClient()
+  const [isGuestMode, setIsGuestMode] = useState(false)
   const [matchType, setMatchType] = useState<'singles' | 'doubles'>('singles')
   const [sets, setSets] = useState([
     { player: '', opponent: '' },
@@ -20,12 +23,24 @@ export default function RecordMatchPage() {
   const [visibleSets, setVisibleSets] = useState(3)
   const MAX_SETS = 5
   const [opponent, setOpponent] = useState('')
+  const [opponentUser, setOpponentUser] = useState<Profile | null>(null)
   const [partner, setPartner] = useState('')
+  const [partnerUser, setPartnerUser] = useState<Profile | null>(null)
   const [opponent2, setOpponent2] = useState('')
+  const [opponent2User, setOpponent2User] = useState<Profile | null>(null)
   const [location, setLocation] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  // Check if user is logged in
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsGuestMode(!user)
+    }
+    checkAuth()
+  }, [supabase])
 
   const handleSetChange = (index: number, field: 'player' | 'opponent', value: string) => {
     const newSets = [...sets]
@@ -69,8 +84,14 @@ export default function RecordMatchPage() {
           id: 'demo',
           match_type: matchType,
           opponent_name: opponent.trim(),
+          opponent_user_id: opponentUser?.id || null,
+          opponent_profile: opponentUser,
           partner_name: matchType === 'doubles' ? partner.trim() || null : null,
+          partner_user_id: matchType === 'doubles' ? partnerUser?.id || null : null,
+          partner_profile: matchType === 'doubles' ? partnerUser : null,
           opponent_partner_name: matchType === 'doubles' ? opponent2.trim() || null : null,
+          opponent_partner_user_id: matchType === 'doubles' ? opponent2User?.id || null : null,
+          opponent_partner_profile: matchType === 'doubles' ? opponent2User : null,
           location: location.trim() || null,
           played_at: date,
           result,
@@ -93,8 +114,11 @@ export default function RecordMatchPage() {
           user_id: user.id,
           match_type: matchType,
           opponent_name: opponent.trim(),
+          opponent_user_id: opponentUser?.id || null,
           partner_name: matchType === 'doubles' ? partner.trim() || null : null,
+          partner_user_id: matchType === 'doubles' ? partnerUser?.id || null : null,
           opponent_partner_name: matchType === 'doubles' ? opponent2.trim() || null : null,
+          opponent_partner_user_id: matchType === 'doubles' ? opponent2User?.id || null : null,
           location: location.trim() || null,
           played_at: date,
         })
@@ -185,44 +209,39 @@ export default function RecordMatchPage() {
 
         {/* Partner (Doubles only) */}
         {matchType === 'doubles' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Your Partner</label>
-            <input
-              type="text"
-              placeholder="Enter your partner's name"
-              value={partner}
-              onChange={(e) => setPartner(e.target.value)}
-              className="input"
-            />
-          </div>
+          <UserSearchInput
+            label="Your Partner"
+            placeholder={isGuestMode ? "Search demo players (e.g. John)" : "Search username or enter name"}
+            value={partner}
+            selectedUser={partnerUser}
+            onChange={setPartner}
+            onUserSelect={setPartnerUser}
+            isGuestMode={isGuestMode}
+          />
         )}
 
         {/* Opponent */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
-            {matchType === 'doubles' ? 'Opponent 1' : 'Opponent Name'}
-          </label>
-          <input
-            type="text"
-            placeholder="Enter opponent name"
-            value={opponent}
-            onChange={(e) => setOpponent(e.target.value)}
-            className="input"
-          />
-        </div>
+        <UserSearchInput
+          label={matchType === 'doubles' ? 'Opponent 1' : 'Opponent Name'}
+          placeholder={isGuestMode ? "Search demo players (e.g. John)" : "Search username or enter name"}
+          value={opponent}
+          selectedUser={opponentUser}
+          onChange={setOpponent}
+          onUserSelect={setOpponentUser}
+          isGuestMode={isGuestMode}
+        />
 
         {/* Opponent 2 (Doubles only) */}
         {matchType === 'doubles' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Opponent 2</label>
-            <input
-              type="text"
-              placeholder="Enter second opponent's name"
-              value={opponent2}
-              onChange={(e) => setOpponent2(e.target.value)}
-              className="input"
-            />
-          </div>
+          <UserSearchInput
+            label="Opponent 2"
+            placeholder={isGuestMode ? "Search demo players (e.g. Jane)" : "Search username or enter name"}
+            value={opponent2}
+            selectedUser={opponent2User}
+            onChange={setOpponent2}
+            onUserSelect={setOpponent2User}
+            isGuestMode={isGuestMode}
+          />
         )}
 
         {/* Score Input */}

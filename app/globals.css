@@ -64,6 +64,11 @@
     @apply w-full p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-all placeholder-gray-400;
   }
 
+  /* Fix date input calendar icon in dark mode */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    @apply dark:invert dark:opacity-70;
+  }
+
   .card {
     @apply bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4;
   }

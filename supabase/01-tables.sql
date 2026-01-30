@@ -27,8 +27,11 @@ CREATE TABLE matches (
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   match_type TEXT NOT NULL CHECK (match_type IN ('singles', 'doubles')),
   opponent_name TEXT NOT NULL,
+  opponent_user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   partner_name TEXT,
+  partner_user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   opponent_partner_name TEXT,
+  opponent_partner_user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   location TEXT,
   played_at DATE NOT NULL DEFAULT CURRENT_DATE,
   result TEXT CHECK (result IN ('win', 'loss', 'draw')),
@@ -84,6 +87,9 @@ CREATE TABLE group_members (
 -- ============================================
 CREATE INDEX idx_matches_user_id ON matches(user_id);
 CREATE INDEX idx_matches_played_at ON matches(played_at DESC);
+CREATE INDEX idx_matches_opponent_user_id ON matches(opponent_user_id);
+CREATE INDEX idx_matches_partner_user_id ON matches(partner_user_id);
+CREATE INDEX idx_matches_opponent_partner_user_id ON matches(opponent_partner_user_id);
 CREATE INDEX idx_match_sets_match_id ON match_sets(match_id);
 CREATE INDEX idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX idx_group_members_group_id ON group_members(group_id);

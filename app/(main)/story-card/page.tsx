@@ -15,7 +15,12 @@ const templates = [
   { id: 'minimal', name: 'Minimal', gradient: 'from-white to-gray-100' },
 ]
 
-type MatchWithSets = Match & { match_sets: MatchSet[] }
+type MatchWithSets = Match & {
+  match_sets: MatchSet[]
+  opponent_profile?: Profile | null
+  partner_profile?: Profile | null
+  opponent_partner_profile?: Profile | null
+}
 
 function StoryCardContent() {
   const searchParams = useSearchParams()
@@ -72,7 +77,7 @@ function StoryCardContent() {
         setProfile(profileData)
       }
 
-      // Fetch match with sets
+      // Fetch match with sets and linked profiles
       const { data: matchData } = await supabase
         .from('matches')
         .select('*, match_sets(*)')
@@ -80,7 +85,30 @@ function StoryCardContent() {
         .single()
 
       if (matchData) {
-        setMatch(matchData as MatchWithSets)
+        // Fetch linked profiles if any
+        const profileIds = [
+          matchData.opponent_user_id,
+          matchData.partner_user_id,
+          matchData.opponent_partner_user_id,
+        ].filter((id): id is string => id !== null && id !== undefined)
+
+        let linkedProfiles: Profile[] = []
+        if (profileIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', profileIds)
+
+          linkedProfiles = profiles || []
+        }
+
+        const matchWithProfiles: MatchWithSets = {
+          ...matchData,
+          opponent_profile: linkedProfiles.find(p => p.id === matchData.opponent_user_id) || null,
+          partner_profile: linkedProfiles.find(p => p.id === matchData.partner_user_id) || null,
+          opponent_partner_profile: linkedProfiles.find(p => p.id === matchData.opponent_partner_user_id) || null,
+        }
+        setMatch(matchWithProfiles)
       }
 
       // Fetch all matches for stats
@@ -437,11 +465,17 @@ function StoryCardContent() {
                       {/* Player 2 - Partner */}
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                          <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                          </svg>
+                          {match.partner_profile?.avatar_url ? (
+                            <img src={match.partner_profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                          )}
                         </div>
-                        <div className="font-semibold text-sm text-gray-900 truncate">{match.partner_name || 'Partner'}</div>
+                        <div className="font-semibold text-sm text-gray-900 truncate">
+                          {match.partner_profile ? `@${match.partner_profile.username}` : (match.partner_name || 'Partner')}
+                        </div>
                       </div>
                     </div>
                     {/* Scores column - vertically centered */}
@@ -512,20 +546,32 @@ function StoryCardContent() {
                       {/* Opponent 1 */}
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                          <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                          </svg>
+                          {match.opponent_profile?.avatar_url ? (
+                            <img src={match.opponent_profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                          )}
                         </div>
-                        <div className="font-semibold text-sm text-gray-900 truncate">{match.opponent_name}</div>
+                        <div className="font-semibold text-sm text-gray-900 truncate">
+                          {match.opponent_profile ? `@${match.opponent_profile.username}` : match.opponent_name}
+                        </div>
                       </div>
                       {/* Opponent 2 */}
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                          <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                          </svg>
+                          {match.opponent_partner_profile?.avatar_url ? (
+                            <img src={match.opponent_partner_profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                          )}
                         </div>
-                        <div className="font-semibold text-sm text-gray-900 truncate">{match.opponent_partner_name || 'Partner'}</div>
+                        <div className="font-semibold text-sm text-gray-900 truncate">
+                          {match.opponent_partner_profile ? `@${match.opponent_partner_profile.username}` : (match.opponent_partner_name || 'Partner')}
+                        </div>
                       </div>
                     </div>
                     {/* Scores column - vertically centered */}
@@ -550,12 +596,18 @@ function StoryCardContent() {
                 ) : (
                   <div className="bg-white px-3 py-2.5 flex items-center gap-2 rounded-b-xl">
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                      </svg>
+                      {match.opponent_profile?.avatar_url ? (
+                        <img src={match.opponent_profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-gray-900 truncate">{match.opponent_name}</div>
+                      <div className="font-semibold text-sm text-gray-900 truncate">
+                        {match.opponent_profile ? `@${match.opponent_profile.username}` : match.opponent_name}
+                      </div>
                     </div>
                     <div className="flex gap-0.5">
                       {sortedSets.map((set) => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Users, Trash2, Loader2, LogIn } from 'lucide-react'
+import { Plus, Trash2, Loader2, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
 
@@ -248,24 +248,15 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="px-6 -mt-10">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 grid grid-cols-2 gap-3">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
           <Link
             href="/record"
-            className="flex flex-col items-center justify-center gap-2 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-xl p-4 transition-all"
+            className="flex items-center justify-center gap-3 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-xl p-4 transition-all"
           >
             <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white">
               <Plus className="w-6 h-6" />
             </div>
-            <span className="font-semibold text-gray-700 dark:text-gray-200">New Match</span>
-          </Link>
-          <Link
-            href="/groups"
-            className="flex flex-col items-center justify-center gap-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-xl p-4 transition-all"
-          >
-            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
-              <Users className="w-6 h-6" />
-            </div>
-            <span className="font-semibold text-gray-700 dark:text-gray-200">Groups</span>
+            <span className="font-semibold text-lg text-gray-700 dark:text-gray-200">New Match</span>
           </Link>
         </div>
       </div>
