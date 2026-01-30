@@ -102,14 +102,14 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 pb-24">
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 pb-24 rounded-b-3xl">
         <h1 className="text-xl font-bold mb-6">Profile</h1>
@@ -148,23 +148,23 @@ export default function ProfilePage() {
 
       {/* Stats Card */}
       <div className="px-6 -mt-12">
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <div className="grid grid-cols-4 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold text-gray-800">{stats.matches}</div>
-              <div className="text-xs text-gray-500">Matches</div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats.matches}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Matches</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-600">{stats.wins}</div>
-              <div className="text-xs text-gray-500">Wins</div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.wins}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Wins</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-red-500">{stats.losses}</div>
-              <div className="text-xs text-gray-500">Losses</div>
+              <div className="text-2xl font-bold text-red-500 dark:text-red-400">{stats.losses}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Losses</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-800">{stats.winRate}%</div>
-              <div className="text-xs text-gray-500">Win Rate</div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats.winRate}%</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Win Rate</div>
             </div>
           </div>
         </div>
@@ -172,23 +172,23 @@ export default function ProfilePage() {
 
       {/* Menu Items */}
       <div className="px-6 mt-6 space-y-3">
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           {menuItems.map((item, index) => {
             const content = (
               <>
                 <div className="flex items-center gap-3">
-                  <item.icon className={`w-5 h-5 ${item.disabled ? 'text-gray-300' : 'text-gray-500'}`} />
-                  <span className={`font-medium ${item.disabled ? 'text-gray-400' : 'text-gray-700'}`}>
+                  <item.icon className={`w-5 h-5 ${item.disabled ? 'text-gray-300 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'}`} />
+                  <span className={`font-medium ${item.disabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'}`}>
                     {item.label}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {item.disabled && (
-                    <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 px-2 py-0.5 rounded-full">
                       Soon
                     </span>
                   )}
-                  <ChevronRight className={`w-5 h-5 ${item.disabled ? 'text-gray-300' : 'text-gray-400'}`} />
+                  <ChevronRight className={`w-5 h-5 ${item.disabled ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-gray-500'}`} />
                 </div>
               </>
             )
@@ -202,34 +202,34 @@ export default function ProfilePage() {
                 ) : (
                   <Link
                     href={item.href}
-                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-all"
+                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                   >
                     {content}
                   </Link>
                 )}
-                {index < menuItems.length - 1 && <div className="border-t border-gray-100"></div>}
+                {index < menuItems.length - 1 && <div className="border-t border-gray-100 dark:border-gray-700"></div>}
               </div>
             )
           })}
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           {settingsItems.map((item, index) => {
             const content = (
               <>
                 <div className="flex items-center gap-3">
-                  <item.icon className={`w-5 h-5 ${item.disabled ? 'text-gray-300' : 'text-gray-500'}`} />
-                  <span className={`font-medium ${item.disabled ? 'text-gray-400' : 'text-gray-700'}`}>
+                  <item.icon className={`w-5 h-5 ${item.disabled ? 'text-gray-300 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'}`} />
+                  <span className={`font-medium ${item.disabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'}`}>
                     {item.label}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {item.disabled && (
-                    <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 px-2 py-0.5 rounded-full">
                       Soon
                     </span>
                   )}
-                  <ChevronRight className={`w-5 h-5 ${item.disabled ? 'text-gray-300' : 'text-gray-400'}`} />
+                  <ChevronRight className={`w-5 h-5 ${item.disabled ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-gray-500'}`} />
                 </div>
               </>
             )
@@ -243,12 +243,12 @@ export default function ProfilePage() {
                 ) : (
                   <Link
                     href={item.href}
-                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-all"
+                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                   >
                     {content}
                   </Link>
                 )}
-                {index < settingsItems.length - 1 && <div className="border-t border-gray-100"></div>}
+                {index < settingsItems.length - 1 && <div className="border-t border-gray-100 dark:border-gray-700"></div>}
               </div>
             )
           })}
@@ -257,13 +257,13 @@ export default function ProfilePage() {
         {/* Logout Button */}
         <button
           onClick={handleLogout}
-          className="w-full bg-red-50 text-red-600 font-semibold py-4 rounded-xl hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+          className="w-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-semibold py-4 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition-all flex items-center justify-center gap-2"
         >
           <LogOut className="w-5 h-5" />
           Logout
         </button>
 
-        <p className="text-center text-xs text-gray-400 mt-4 pb-4">
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4 pb-4">
           MatchPost v1.0.0
         </p>
       </div>

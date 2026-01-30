@@ -136,24 +136,24 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
       {/* Delete Confirmation Modal */}
       {deleteMatchId && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-xl">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-8 h-8 text-red-500" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Delete Match?</h3>
-              <p className="text-gray-500 text-sm">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Delete Match?</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
                 This will permanently delete this match and all its data.
               </p>
             </div>
@@ -161,7 +161,7 @@ export default function DashboardPage() {
               <button
                 onClick={() => setDeleteMatchId(null)}
                 disabled={isDeleting}
-                className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50"
+                className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -228,38 +228,38 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="px-6 -mt-10">
-        <div className="bg-white rounded-2xl shadow-lg p-4 grid grid-cols-2 gap-3">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 grid grid-cols-2 gap-3">
           <Link
             href="/record"
-            className="flex flex-col items-center justify-center gap-2 bg-green-50 hover:bg-green-100 rounded-xl p-4 transition-all"
+            className="flex flex-col items-center justify-center gap-2 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-xl p-4 transition-all"
           >
             <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white">
               <Plus className="w-6 h-6" />
             </div>
-            <span className="font-semibold text-gray-700">New Match</span>
+            <span className="font-semibold text-gray-700 dark:text-gray-200">New Match</span>
           </Link>
           <Link
             href="/groups"
-            className="flex flex-col items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 rounded-xl p-4 transition-all"
+            className="flex flex-col items-center justify-center gap-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-xl p-4 transition-all"
           >
             <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white">
               <Users className="w-6 h-6" />
             </div>
-            <span className="font-semibold text-gray-700">Groups</span>
+            <span className="font-semibold text-gray-700 dark:text-gray-200">Groups</span>
           </Link>
         </div>
       </div>
 
       {/* Recent Matches */}
       <div className="px-6 mt-6 pb-24">
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Recent Matches</h2>
+        <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Recent Matches</h2>
         {matches.length === 0 ? (
-          <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-sm text-center">
             <div className="text-4xl mb-3">🎾</div>
-            <p className="text-gray-500">No matches yet</p>
+            <p className="text-gray-500 dark:text-gray-400">No matches yet</p>
             <Link
               href="/record"
-              className="text-green-600 font-semibold mt-2 inline-block hover:underline"
+              className="text-green-600 dark:text-green-400 font-semibold mt-2 inline-block hover:underline"
             >
               Record your first match →
             </Link>
@@ -269,7 +269,7 @@ export default function DashboardPage() {
             {matches.map((match) => (
               <div
                 key={match.id}
-                className="bg-white rounded-xl p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-all"
+                className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-all"
               >
                 <Link
                   href={`/story-card?matchId=${match.id}`}
@@ -277,20 +277,20 @@ export default function DashboardPage() {
                 >
                   <div className={`w-2 h-12 rounded-full ${match.result === 'win' ? 'bg-green-500' : 'bg-red-400'}`}></div>
                   <div>
-                    <div className="font-semibold text-gray-800">vs {match.opponent_name}</div>
-                    <div className="text-sm text-gray-500">{formatDate(match.played_at)}</div>
+                    <div className="font-semibold text-gray-800 dark:text-white">vs {match.opponent_name}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{formatDate(match.played_at)}</div>
                   </div>
                 </Link>
                 <div className="flex items-center gap-3">
                   <Link href={`/story-card?matchId=${match.id}`} className="text-right">
-                    <div className={`font-bold ${match.result === 'win' ? 'text-green-600' : 'text-red-500'}`}>
+                    <div className={`font-bold ${match.result === 'win' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
                       {match.result === 'win' ? 'WIN' : match.result === 'loss' ? 'LOSS' : 'DRAW'}
                     </div>
-                    <div className="text-sm text-gray-500">{formatScore(match.match_sets)}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{formatScore(match.match_sets)}</div>
                   </Link>
                   <button
                     onClick={() => setDeleteMatchId(match.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-all"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
