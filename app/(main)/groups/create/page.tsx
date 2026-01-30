@@ -40,9 +40,9 @@ export default function CreateGroupPage() {
       <div className="p-6 space-y-6">
         {/* Group Icon */}
         <div className="flex justify-center">
-          <button className="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 border-dashed border-green-300 dark:border-green-700 hover:bg-green-200 dark:hover:bg-green-900/50 transition-all">
+          <button className="w-24 h-24 bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 border-dashed border-yellow-300 dark:border-yellow-700 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all">
             <span className="text-3xl">🎾</span>
-            <span className="text-xs text-green-600 dark:text-green-400">Change</span>
+            <span className="text-xs text-yellow-600 dark:text-yellow-400">Change</span>
           </button>
         </div>
 
@@ -78,7 +78,7 @@ export default function CreateGroupPage() {
               onClick={() => setPrivacy('public')}
               className={`py-4 px-4 font-semibold rounded-xl flex flex-col items-center gap-1 transition-all ${
                 privacy === 'public'
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-yellow-500 text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
@@ -92,7 +92,7 @@ export default function CreateGroupPage() {
               onClick={() => setPrivacy('private')}
               className={`py-4 px-4 font-semibold rounded-xl flex flex-col items-center gap-1 transition-all ${
                 privacy === 'private'
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-yellow-500 text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >

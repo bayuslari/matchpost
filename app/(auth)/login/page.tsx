@@ -73,8 +73,12 @@ export default function LoginPage() {
     return (
       <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-6">
         <div className="text-center">
-          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
+          <h1 className="font-outfit text-3xl font-black mb-6 tracking-wider uppercase">
+            <span className="text-gray-800 dark:text-white">MATCH</span>
+            <span className="text-yellow-500">POST</span>
+          </h1>
+          <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Check your email</h2>
           <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-xs">
@@ -85,7 +89,7 @@ export default function LoginPage() {
               setEmailSent(false)
               setEmail('')
             }}
-            className="text-green-600 dark:text-green-400 font-medium hover:underline"
+            className="text-yellow-600 dark:text-yellow-400 font-medium hover:underline"
           >
             Use a different email
           </button>
@@ -105,9 +109,11 @@ export default function LoginPage() {
       </Link>
 
       <div className="text-center mb-10">
-        <div className="text-5xl mb-3">🎾</div>
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Welcome to MatchPost</h2>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Sign in to track your matches</p>
+        <h1 className="font-outfit text-4xl font-black mb-3 tracking-wider uppercase">
+          <span className="text-gray-800 dark:text-white">MATCH</span>
+          <span className="text-yellow-500">POST</span>
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400">Sign in to track your matches</p>
       </div>
 
       <div className="w-full max-w-sm space-y-3">
@@ -133,7 +139,7 @@ export default function LoginPage() {
             <button
               onClick={handleEmailLogin}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 bg-green-600 text-white font-semibold py-4 px-6 rounded-xl shadow-md hover:shadow-lg hover:bg-green-500 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 font-bold py-4 px-6 rounded-xl shadow-lg shadow-yellow-500/30 hover:shadow-xl hover:shadow-yellow-500/40 hover:scale-[1.02] transition-all disabled:opacity-50"
             >
               {isLoading ? (
                 <>
@@ -161,7 +167,7 @@ export default function LoginPage() {
             <button
               onClick={handleGoogleLogin}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold py-4 px-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -175,7 +181,7 @@ export default function LoginPage() {
             {/* Email Login */}
             <button
               onClick={() => setShowEmailForm(true)}
-              className="w-full flex items-center justify-center gap-3 bg-gray-800 dark:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl shadow-md hover:shadow-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-all"
+              className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 font-bold py-4 px-6 rounded-2xl shadow-lg shadow-yellow-500/20 hover:shadow-xl hover:shadow-yellow-500/30 hover:scale-[1.02] transition-all"
             >
               <Mail className="w-5 h-5" />
               Continue with Email
@@ -191,7 +197,7 @@ export default function LoginPage() {
             {/* Demo Mode */}
             <button
               onClick={handleDemoLogin}
-              className="w-full text-gray-500 dark:text-gray-400 font-medium py-3 hover:text-gray-700 dark:hover:text-gray-200 transition-all"
+              className="w-full text-gray-500 dark:text-gray-400 font-medium py-3 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all"
             >
               Try Demo Mode →
             </button>
@@ -199,8 +205,15 @@ export default function LoginPage() {
         )}
       </div>
 
-      <p className="mt-8 text-xs text-gray-400 dark:text-gray-500 text-center max-w-xs">
-        By continuing, you agree to our Terms of Service and Privacy Policy
+      <p className="mt-8 text-xs text-gray-400 dark:text-gray-500 text-center">
+        By continuing, you agree to our{' '}
+        <Link href="/terms" className="text-yellow-600 dark:text-yellow-400 hover:underline whitespace-nowrap">
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link href="/privacy" className="text-yellow-600 dark:text-yellow-400 hover:underline whitespace-nowrap">
+          Privacy Policy
+        </Link>
       </p>
     </div>
   )

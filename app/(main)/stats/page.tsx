@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { BarChart3, TrendingUp, Target, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useUserStore } from '@/lib/stores/user-store'
 
 type MonthlyData = {
   month: string
@@ -13,6 +14,7 @@ type MonthlyData = {
 
 export default function StatsPage() {
   const supabase = createClient()
+  const { isInitialized, initialize } = useUserStore()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     totalMatches: 0,
@@ -25,6 +27,9 @@ export default function StatsPage() {
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
 
   useEffect(() => {
+    // Initialize store if not already done
+    initialize()
+
     async function loadStats() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -121,8 +126,20 @@ export default function StatsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-6">
+        {/* Animated Logo */}
+        <div className="text-4xl font-outfit font-black tracking-tight">
+          <span className="text-yellow-500 animate-pulse">MATCH</span>
+          <span className="text-gray-800 dark:text-white">POST</span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-48 space-y-2">
+          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
+          </div>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+        </div>
       </div>
     )
   }
@@ -135,14 +152,14 @@ export default function StatsPage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 pb-8">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-8">
         <div className="flex items-center gap-4 mb-2">
           <Link href="/dashboard" className="p-1 hover:bg-white/20 rounded-full">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <h1 className="text-2xl font-bold">Statistics</h1>
         </div>
-        <p className="text-green-100 ml-9">Your tennis journey in numbers</p>
+        <p className="text-yellow-800 ml-9">Your tennis journey in numbers</p>
       </div>
 
       <div className="px-6 -mt-4 space-y-4">
@@ -160,7 +177,7 @@ export default function StatsPage() {
               <Target className="w-4 h-4" />
               <span className="text-sm">Win Rate</span>
             </div>
-            <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.winRate}%</div>
+            <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats.winRate}%</div>
           </div>
         </div>
 
@@ -170,14 +187,14 @@ export default function StatsPage() {
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-green-600 dark:text-green-400 font-medium">{stats.wins} Wins</span>
+                <span className="text-yellow-600 dark:text-yellow-400 font-medium">{stats.wins} Wins</span>
                 <span className="text-red-500 dark:text-red-400 font-medium">{stats.losses} Losses</span>
               </div>
               <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex">
                 {stats.totalMatches > 0 ? (
                   <>
                     <div
-                      className="bg-green-500 h-full"
+                      className="bg-yellow-500 h-full"
                       style={{ width: `${stats.winRate}%` }}
                     ></div>
                     <div
@@ -216,7 +233,7 @@ export default function StatsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-800 dark:text-white">Monthly Performance</h3>
-            <TrendingUp className="w-5 h-5 text-green-500 dark:text-green-400" />
+            <TrendingUp className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />
           </div>
 
           {monthlyData.length > 0 && monthlyData.some(d => d.wins > 0 || d.losses > 0) ? (
@@ -234,7 +251,7 @@ export default function StatsPage() {
                       <div className="w-full flex flex-col justify-end" style={{ height: '100px' }}>
                         {data.wins > 0 && (
                           <div
-                            className="w-full bg-green-500 rounded-t"
+                            className="w-full bg-yellow-500 rounded-t"
                             style={{ height: `${winsHeight}%` }}
                           ></div>
                         )}
@@ -252,7 +269,7 @@ export default function StatsPage() {
               </div>
               <div className="flex justify-center gap-6 mt-4 text-xs">
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 bg-green-500 rounded"></div>
+                  <div className="w-3 h-3 bg-yellow-500 rounded"></div>
                   <span className="text-gray-500 dark:text-gray-400">Wins</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -265,7 +282,7 @@ export default function StatsPage() {
             <div className="text-center py-8 text-gray-400 dark:text-gray-500">
               <div className="text-2xl mb-2">📊</div>
               <p className="text-sm">No match data yet</p>
-              <Link href="/record" className="text-green-600 dark:text-green-400 text-sm hover:underline">
+              <Link href="/record" className="text-yellow-600 dark:text-yellow-400 text-sm hover:underline">
                 Record your first match
               </Link>
             </div>

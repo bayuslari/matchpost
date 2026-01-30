@@ -162,14 +162,14 @@ export default function RecordMatchPage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 flex items-center gap-4">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 p-4 flex items-center gap-4">
         <Link
           href="/dashboard"
-          className="p-2 hover:bg-white/20 rounded-full text-white"
+          className="p-2 hover:bg-black/10 rounded-full text-gray-900"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h1 className="text-xl font-bold text-white">Record Match</h1>
+        <h1 className="text-xl font-bold text-gray-900">Record Match</h1>
       </div>
 
       <div className="p-6 space-y-6">
@@ -188,7 +188,7 @@ export default function RecordMatchPage() {
               onClick={() => setMatchType('singles')}
               className={`py-3 px-4 font-semibold rounded-xl transition-all ${
                 matchType === 'singles'
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-yellow-500 text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
@@ -198,7 +198,7 @@ export default function RecordMatchPage() {
               onClick={() => setMatchType('doubles')}
               className={`py-3 px-4 font-semibold rounded-xl transition-all ${
                 matchType === 'doubles'
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-yellow-500 text-gray-900'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
@@ -261,11 +261,11 @@ export default function RecordMatchPage() {
                       placeholder="0"
                       value={set.player}
                       onChange={(e) => handleSetChange(index, 'player', e.target.value)}
-                      className="w-full p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl text-center font-bold text-green-700 dark:text-green-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-xl text-center font-bold text-yellow-700 dark:text-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                       min="0"
                       max="7"
                     />
-                    <span className="absolute -top-2 left-3 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-gray-900 px-1">You</span>
+                    <span className="absolute -top-2 left-3 text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-gray-900 px-1">You</span>
                   </div>
                   <div className="relative">
                     <input

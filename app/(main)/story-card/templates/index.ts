@@ -1,0 +1,6 @@
+export { ProTemplate } from './ProTemplate'
+export { PhotoProTemplate } from './PhotoProTemplate'
+export { SportyTemplate } from './SportyTemplate'
+export { DarkTemplate } from './DarkTemplate'
+export { NeonTemplate } from './NeonTemplate'
+export { MinimalTemplate } from './MinimalTemplate'

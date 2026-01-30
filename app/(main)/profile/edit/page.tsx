@@ -3,13 +3,16 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import { useUserStore } from '@/lib/stores/user-store'
 import type { Profile } from '@/lib/database.types'
 import { ArrowLeft, Loader2, Check } from 'lucide-react'
 
 export default function EditProfilePage() {
   const router = useRouter()
   const supabase = createClient()
+  const { refreshProfile, updateProfile } = useUserStore()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -75,6 +78,14 @@ export default function EditProfilePage() {
     setSaving(false)
 
     if (!error) {
+      // Update the zustand store with new profile data
+      updateProfile({
+        username: cleanUsername || null,
+        full_name: fullName || null,
+        location: location || null,
+        bio: bio || null,
+        skill_level: skillLevel === '' ? null : skillLevel,
+      })
       setSuccess(true)
       setUsername(cleanUsername)
       setTimeout(() => setSuccess(false), 2000)
@@ -83,8 +94,20 @@ export default function EditProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-6">
+        {/* Animated Logo */}
+        <div className="text-4xl font-outfit font-black tracking-tight">
+          <span className="text-yellow-500 animate-pulse">MATCH</span>
+          <span className="text-gray-800 dark:text-white">POST</span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-48 space-y-2">
+          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
+          </div>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+        </div>
       </div>
     )
   }
@@ -92,7 +115,7 @@ export default function EditProfilePage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-4">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-4">
         <div className="flex items-center gap-4">
           <Link
             href="/profile"
@@ -110,9 +133,11 @@ export default function EditProfilePage() {
         <div className="flex justify-center">
           <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
             {profile?.avatar_url ? (
-              <img
+              <Image
                 src={profile.avatar_url}
                 alt=""
+                width={96}
+                height={96}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none'
@@ -141,7 +166,7 @@ export default function EditProfilePage() {
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               placeholder="your_username"
-              className="w-full pl-8 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400"
+              className="w-full pl-8 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400"
             />
           </div>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -159,7 +184,7 @@ export default function EditProfilePage() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Your full name"
-            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400"
+            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400"
           />
         </div>
 
@@ -173,7 +198,7 @@ export default function EditProfilePage() {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="City, Country"
-            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400"
+            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400"
           />
         </div>
 
@@ -187,7 +212,7 @@ export default function EditProfilePage() {
             onChange={(e) => setBio(e.target.value)}
             placeholder="Tell us about yourself..."
             rows={3}
-            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-gray-900 dark:text-white placeholder-gray-400"
+            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none text-gray-900 dark:text-white placeholder-gray-400"
           />
         </div>
 
@@ -199,7 +224,7 @@ export default function EditProfilePage() {
           <select
             value={skillLevel}
             onChange={(e) => setSkillLevel(e.target.value as 'beginner' | 'intermediate' | 'advanced' | 'pro' | '')}
-            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 dark:text-white"
+            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900 dark:text-white"
           >
             <option value="">Select skill level</option>
             <option value="beginner">Beginner</option>
@@ -213,7 +238,7 @@ export default function EditProfilePage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-green-600 text-white font-semibold py-4 rounded-xl hover:bg-green-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full bg-yellow-500 text-gray-900 font-semibold py-4 rounded-xl hover:bg-yellow-400 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {saving ? (
             <>

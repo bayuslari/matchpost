@@ -3,24 +3,16 @@
 import { useState, useRef, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Trash2, Download, Share2, Loader2, X, LogIn } from 'lucide-react'
+import { ArrowLeft, Camera, Trash2, Download, Share2, Loader2, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { Match, MatchSet, Profile } from '@/lib/database.types'
-
-const templates = [
-  { id: 'pro', name: 'Pro', gradient: 'from-sky-600 via-sky-500 to-cyan-400' },
-  { id: 'sporty', name: 'Sporty', gradient: 'from-green-600 via-green-500 to-yellow-400' },
-  { id: 'dark', name: 'Dark', gradient: 'from-gray-700 via-gray-900 to-black' },
-  { id: 'neon', name: 'Neon', gradient: 'from-purple-600 via-pink-500 to-orange-400' },
-  { id: 'minimal', name: 'Minimal', gradient: 'from-white to-gray-100' },
-]
-
-type MatchWithSets = Match & {
-  match_sets: MatchSet[]
-  opponent_profile?: Profile | null
-  partner_profile?: Profile | null
-  opponent_partner_profile?: Profile | null
-}
+import type { Profile } from '@/lib/database.types'
+import { templates, type MatchWithSets } from './types'
+import { ProTemplate } from './templates/ProTemplate'
+import { PhotoProTemplate } from './templates/PhotoProTemplate'
+import { SportyTemplate } from './templates/SportyTemplate'
+import { DarkTemplate } from './templates/DarkTemplate'
+import { NeonTemplate } from './templates/NeonTemplate'
+import { MinimalTemplate } from './templates/MinimalTemplate'
 
 function StoryCardContent() {
   const searchParams = useSearchParams()
@@ -160,13 +152,25 @@ function StoryCardContent() {
     })
   }
 
+  const formatShortDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
         setBackgroundImage(reader.result as string)
-        setSelectedTemplate('custom')
+        // Switch to a template that supports images if current one doesn't
+        const currentTemplate = templates.find(t => t.id === selectedTemplate)
+        if (!currentTemplate?.supportsImage) {
+          setSelectedTemplate('photo-pro')
+        }
       }
       reader.readAsDataURL(file)
     }
@@ -174,7 +178,6 @@ function StoryCardContent() {
 
   const removeBackgroundImage = () => {
     setBackgroundImage(null)
-    setSelectedTemplate('sporty')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -287,17 +290,8 @@ function StoryCardContent() {
     }
   }
 
-  const isMinimal = selectedTemplate === 'minimal'
-  const isPro = selectedTemplate === 'pro'
-  const hasCustomBg = selectedTemplate === 'custom' && backgroundImage
-
   // Get sorted sets for scoreboard
   const sortedSets = match?.match_sets?.sort((a, b) => a.set_number - b.set_number) || []
-
-  // Determine winner based on sets won
-  const playerSetsWon = sortedSets.filter(s => s.player_score > s.opponent_score).length
-  const opponentSetsWon = sortedSets.filter(s => s.opponent_score > s.player_score).length
-  const isPlayerWinner = playerSetsWon > opponentSetsWon
 
   // Get display name - prefer username for privacy, fallback to full name
   const displayName = isDemo
@@ -305,6 +299,9 @@ function StoryCardContent() {
     : profile?.username
       ? `@${profile.username}`
       : profile?.full_name || 'You'
+
+  const currentTemplate = templates.find(t => t.id === selectedTemplate)
+  const hasCustomBg = backgroundImage && currentTemplate?.supportsImage
 
   if (loading) {
     return (
@@ -319,11 +316,46 @@ function StoryCardContent() {
       <div className="min-h-dvh bg-gray-900 flex flex-col items-center justify-center text-white p-6">
         <div className="text-4xl mb-4">🎾</div>
         <p className="text-gray-400 mb-4">Match not found</p>
-        <Link href="/dashboard" className="text-green-400 hover:underline">
+        <Link href="/dashboard" className="text-yellow-400 hover:underline">
           Back to Dashboard
         </Link>
       </div>
     )
+  }
+
+  // Template props
+  const templateProps = {
+    match,
+    profile,
+    stats,
+    displayName,
+    backgroundImage,
+    hasCustomBg: !!hasCustomBg,
+    cardRef,
+    formatScore,
+    formatDate,
+    formatShortDate,
+    sortedSets,
+  }
+
+  // Render template based on selection
+  const renderTemplate = () => {
+    switch (selectedTemplate) {
+      case 'pro':
+        return <ProTemplate ref={cardRef} {...templateProps} />
+      case 'photo-pro':
+        return <PhotoProTemplate ref={cardRef} {...templateProps} />
+      case 'sporty':
+        return <SportyTemplate ref={cardRef} {...templateProps} />
+      case 'dark':
+        return <DarkTemplate ref={cardRef} {...templateProps} />
+      case 'neon':
+        return <NeonTemplate ref={cardRef} {...templateProps} />
+      case 'minimal':
+        return <MinimalTemplate ref={cardRef} {...templateProps} />
+      default:
+        return <ProTemplate ref={cardRef} {...templateProps} />
+    }
   }
 
   return (
@@ -380,7 +412,7 @@ function StoryCardContent() {
         {isDemo ? (
           <Link
             href="/login"
-            className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-full text-sm font-semibold transition-all"
+            className="flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 px-3 py-1.5 rounded-full text-sm font-semibold transition-all"
           >
             <LogIn className="w-4 h-4" />
             Login
@@ -407,318 +439,7 @@ function StoryCardContent() {
       {/* Preview */}
       <div className={`px-6 mb-6 ${!isDemo ? 'mt-4' : ''}`}>
         <div className="text-gray-400 text-sm mb-2 text-center">Preview</div>
-
-        {/* Instagram Story Preview */}
-        {isPro ? (
-          /* Pro Scoreboard Template - Australian Open Style */
-          <div
-            ref={cardRef}
-            data-card
-            className="mx-auto w-72 h-[504px] rounded-3xl overflow-hidden shadow-2xl relative bg-[#1a6b9c]"
-          >
-            {/* Background Image */}
-            <img
-              src="/ao-bg.png"
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              crossOrigin="anonymous"
-            />
-            {/* Dark Overlay for better text readability */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40"></div>
-
-            <div className="h-full flex flex-col relative z-10 font-outfit">
-              {/* Top Spacer - space for AO logo */}
-              <div className="flex-1 min-h-[150px]"></div>
-
-              {/* Scoreboard Container */}
-              <div className="px-4 flex-shrink-0">
-                {/* Match Type Header Row */}
-                <div className="bg-[#134D6B]/90 backdrop-blur-sm rounded-t-xl px-3 py-2 flex justify-between items-center">
-                  <span className="text-white text-xs font-semibold">
-                    {match.match_type === 'doubles' ? 'Doubles' : 'Singles'}
-                  </span>
-                  <div className="flex gap-0.5">
-                    {sortedSets.map((_, i) => (
-                      <span key={i} className="text-white/90 text-xs font-semibold w-7 text-center">{i + 1}</span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Player Row(s) - You (and Partner for doubles) */}
-                {match.match_type === 'doubles' ? (
-                  <div className="bg-white px-3 py-2 flex items-center gap-2 border-b border-gray-100">
-                    {/* Players column */}
-                    <div className="flex-1 min-w-0 space-y-1">
-                      {/* Player 1 - You */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                          {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div className="font-semibold text-sm text-gray-900 truncate">{displayName}</div>
-                      </div>
-                      {/* Player 2 - Partner */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                          {match.partner_profile?.avatar_url ? (
-                            <img src={match.partner_profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div className="font-semibold text-sm text-gray-900 truncate">
-                          {match.partner_profile ? `@${match.partner_profile.username}` : (match.partner_name || 'Partner')}
-                        </div>
-                      </div>
-                    </div>
-                    {/* Scores column - vertically centered */}
-                    <div className="flex gap-0.5 items-center">
-                      {sortedSets.map((set) => {
-                        const isSetWinner = set.player_score > set.opponent_score
-                        return (
-                          <div
-                            key={set.set_number}
-                            className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
-                              isSetWinner
-                                ? 'bg-[#134D6B] text-white'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
-                            {set.player_score}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white px-3 py-2.5 flex items-center gap-2 border-b border-gray-100">
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                      {profile?.avatar_url ? (
-                        <img
-                          src={profile.avatar_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden')
-                          }}
-                        />
-                      ) : null}
-                      <svg className={`w-5 h-5 text-gray-400 ${profile?.avatar_url ? 'hidden' : ''}`} fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-gray-900 truncate">{displayName}</div>
-                    </div>
-                    <div className="flex gap-0.5">
-                      {sortedSets.map((set) => {
-                        const isSetWinner = set.player_score > set.opponent_score
-                        return (
-                          <div
-                            key={set.set_number}
-                            className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
-                              isSetWinner
-                                ? 'bg-[#134D6B] text-white'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
-                            {set.player_score}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Opponent Row(s) */}
-                {match.match_type === 'doubles' ? (
-                  <div className="bg-white px-3 py-2 flex items-center gap-2 rounded-b-xl">
-                    {/* Opponents column */}
-                    <div className="flex-1 min-w-0 space-y-1">
-                      {/* Opponent 1 */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                          {match.opponent_profile?.avatar_url ? (
-                            <img src={match.opponent_profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div className="font-semibold text-sm text-gray-900 truncate">
-                          {match.opponent_profile ? `@${match.opponent_profile.username}` : match.opponent_name}
-                        </div>
-                      </div>
-                      {/* Opponent 2 */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                          {match.opponent_partner_profile?.avatar_url ? (
-                            <img src={match.opponent_partner_profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div className="font-semibold text-sm text-gray-900 truncate">
-                          {match.opponent_partner_profile ? `@${match.opponent_partner_profile.username}` : (match.opponent_partner_name || 'Partner')}
-                        </div>
-                      </div>
-                    </div>
-                    {/* Scores column - vertically centered */}
-                    <div className="flex gap-0.5 items-center">
-                      {sortedSets.map((set) => {
-                        const isSetWinner = set.opponent_score > set.player_score
-                        return (
-                          <div
-                            key={set.set_number}
-                            className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
-                              isSetWinner
-                                ? 'bg-[#134D6B] text-white'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
-                            {set.opponent_score}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white px-3 py-2.5 flex items-center gap-2 rounded-b-xl">
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                      {match.opponent_profile?.avatar_url ? (
-                        <img src={match.opponent_profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                        </svg>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm text-gray-900 truncate">
-                        {match.opponent_profile ? `@${match.opponent_profile.username}` : match.opponent_name}
-                      </div>
-                    </div>
-                    <div className="flex gap-0.5">
-                      {sortedSets.map((set) => {
-                        const isSetWinner = set.opponent_score > set.player_score
-                        return (
-                          <div
-                            key={set.set_number}
-                            className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
-                              isSetWinner
-                                ? 'bg-[#134D6B] text-white'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
-                            {set.opponent_score}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Match Info Footer */}
-                <div className="bg-[#134D6B]/90 backdrop-blur-sm rounded-xl mt-2 px-3 py-2 flex justify-between items-center">
-                  <span className="text-white text-[10px] font-semibold">
-                    {match.location || 'Tennis Court'}
-                  </span>
-                  <span className="text-white text-[10px] font-bold">
-                    {match.result === 'win' ? '🏆 Victory' : match.result === 'loss' ? 'Match Complete' : 'Draw'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Bottom Spacer */}
-              <div className="flex-1 min-h-[10px]"></div>
-
-              {/* Bottom Section - Date & Watermark */}
-              <div className="pb-4 text-center space-y-1 flex-shrink-0">
-                <div className="text-white/90 text-sm font-medium">{formatDate(match.played_at)}</div>
-                <div className="text-white/50 text-[10px] font-semibold tracking-widest">MATCHPOST</div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Original Templates */
-          <div
-            ref={cardRef}
-            className={`mx-auto w-72 h-[504px] rounded-3xl overflow-hidden shadow-2xl relative ${
-              hasCustomBg ? '' : `bg-gradient-to-br ${templates.find(t => t.id === selectedTemplate)?.gradient || templates[0].gradient}`
-            }`}
-            style={hasCustomBg ? {
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            } : {}}
-          >
-            {/* Overlay for custom background */}
-            {hasCustomBg && (
-              <div className="absolute inset-0 bg-black/40"></div>
-            )}
-
-            <div className="h-full flex flex-col items-center justify-center p-6 text-center relative z-10">
-              {/* Logo */}
-              <div className="text-4xl mb-2">🎾</div>
-
-              {/* Result Badge */}
-              <div className={`px-4 py-1 rounded-full text-sm font-bold mb-4 ${
-                isMinimal ? 'bg-green-500 text-white' : 'bg-white/20 text-white'
-              }`}>
-                {match.result === 'win' ? 'VICTORY 🏆' : match.result === 'loss' ? 'DEFEAT' : 'DRAW'}
-              </div>
-
-              {/* Score */}
-              <div
-                className={`text-5xl font-black mb-2 ${isMinimal ? 'text-gray-800' : 'text-white'}`}
-                style={{ textShadow: hasCustomBg ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none' }}
-              >
-                {formatScore()}
-              </div>
-
-              {/* Opponent */}
-              <div className={`text-lg mb-6 ${isMinimal ? 'text-gray-600' : 'text-white/80'}`}>
-                vs {match.opponent_name}
-              </div>
-
-              {/* Stats */}
-              <div className={`grid grid-cols-2 gap-4 w-full mb-6 ${isMinimal ? 'text-gray-700' : 'text-white'}`}>
-                <div className={`p-3 rounded-xl ${isMinimal ? 'bg-gray-100' : 'bg-white/10 backdrop-blur'}`}>
-                  <div className="text-2xl font-bold">{stats.winRate}%</div>
-                  <div className="text-xs opacity-70">Win Rate</div>
-                </div>
-                <div className={`p-3 rounded-xl ${isMinimal ? 'bg-gray-100' : 'bg-white/10 backdrop-blur'}`}>
-                  <div className="text-2xl font-bold">{stats.streak > 0 ? `🔥 ${stats.streak}` : '0'}</div>
-                  <div className="text-xs opacity-70">Streak</div>
-                </div>
-              </div>
-
-              {/* Location & Date */}
-              <div className={`text-xs ${isMinimal ? 'text-gray-500' : 'text-white/60'}`}>
-                {match.location && (
-                  <>📍 {match.location}<br /></>
-                )}
-                {formatDate(match.played_at)}
-              </div>
-
-              {/* Watermark */}
-              <div className={`mt-4 text-xs font-medium ${isMinimal ? 'text-gray-400' : 'text-white/40'}`}>
-                MatchPost
-              </div>
-            </div>
-          </div>
-        )}
+        {renderTemplate()}
       </div>
 
       {/* Photo Upload */}
@@ -752,9 +473,9 @@ function StoryCardContent() {
         </div>
 
         {backgroundImage && (
-          <div className="mt-2 flex items-center gap-2 text-green-400 text-sm">
+          <div className="mt-2 flex items-center gap-2 text-yellow-400 text-sm">
             <span>✓</span>
-            <span>Photo added!</span>
+            <span>Photo added! Select a template that supports custom backgrounds.</span>
           </div>
         )}
       </div>
@@ -766,44 +487,72 @@ function StoryCardContent() {
           {templates.map((template) => (
             <button
               key={template.id}
-              onClick={() => {
-                setSelectedTemplate(template.id)
-                if (template.id !== 'custom') setBackgroundImage(null)
-              }}
-              className={`flex-shrink-0 w-20 h-28 rounded-xl bg-gradient-to-br ${template.gradient} flex flex-col justify-between p-2 transition-all ${
+              onClick={() => setSelectedTemplate(template.id)}
+              className={`flex-shrink-0 w-20 h-28 rounded-xl overflow-hidden flex flex-col justify-between p-2 transition-all relative ${
                 selectedTemplate === template.id ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900' : ''
               } ${template.id === 'dark' ? 'border border-gray-700/50' : ''}`}
             >
-              {/* Mini scoreboard preview for Pro template */}
-              {template.id === 'pro' && (
-                <div className="flex flex-col gap-1 mt-1">
-                  <div className="bg-white/90 rounded h-3 w-full"></div>
-                  <div className="bg-white/70 rounded h-3 w-full"></div>
+              {/* Background */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${template.gradient}`}></div>
+
+              {/* Custom bg indicator */}
+              {template.supportsImage && backgroundImage && (
+                <div className="absolute inset-0">
+                  <img src={backgroundImage} alt="" className="w-full h-full object-cover opacity-50" />
                 </div>
               )}
-              <span className={`text-xs font-medium ${template.id === 'minimal' ? 'text-gray-700' : 'text-white'} ${template.id !== 'pro' ? 'mt-auto' : ''}`}>
+
+              {/* Mini preview based on template type */}
+              <div className="relative z-10 flex-1 flex flex-col justify-center">
+                {(template.id === 'pro' || template.id === 'photo-pro') && (
+                  <div className="flex flex-col gap-1">
+                    <div className="bg-white/90 rounded h-2.5 w-full"></div>
+                    <div className="bg-white/70 rounded h-2.5 w-full"></div>
+                  </div>
+                )}
+                {template.id === 'sporty' && (
+                  <div className="flex flex-col gap-1 items-center">
+                    <div className="bg-white/30 rounded-full w-6 h-6"></div>
+                    <div className="bg-white text-[8px] font-bold px-1.5 rounded">VS</div>
+                    <div className="bg-black/30 rounded-full w-6 h-6"></div>
+                  </div>
+                )}
+                {template.id === 'dark' && (
+                  <div className="text-center">
+                    <div className="text-yellow-400 text-[10px] font-bold">WIN</div>
+                    <div className="text-white text-[8px]">6-4</div>
+                  </div>
+                )}
+                {template.id === 'neon' && (
+                  <div className="flex flex-col gap-1">
+                    <div className="border border-cyan-400/50 rounded h-2.5 w-full"></div>
+                    <div className="border border-pink-400/50 rounded h-2.5 w-full"></div>
+                  </div>
+                )}
+                {template.id === 'minimal' && (
+                  <div className="text-center">
+                    <div className="text-gray-800 text-xs font-light">6-4</div>
+                  </div>
+                )}
+              </div>
+
+              <span className={`text-xs font-medium relative z-10 ${
+                template.id === 'minimal' ? 'text-gray-700' : 'text-white'
+              }`}>
                 {template.name}
               </span>
+
+              {/* Image support indicator */}
+              {template.supportsImage && (
+                <div className="absolute top-1 right-1 w-3 h-3 bg-white/80 rounded-full flex items-center justify-center">
+                  <Camera className="w-2 h-2 text-gray-600" />
+                </div>
+              )}
             </button>
           ))}
-
-          {/* Custom template with uploaded photo */}
-          {backgroundImage && (
-            <button
-              onClick={() => setSelectedTemplate('custom')}
-              className={`flex-shrink-0 w-20 h-28 rounded-xl overflow-hidden flex items-end p-2 relative transition-all ${
-                selectedTemplate === 'custom' ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900' : ''
-              }`}
-              style={{
-                backgroundImage: `url(${backgroundImage})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-              }}
-            >
-              <div className="absolute inset-0 bg-black/30"></div>
-              <span className="text-xs font-medium text-white relative z-10">Custom</span>
-            </button>
-          )}
+        </div>
+        <div className="text-white/40 text-xs mt-2 px-2">
+          📷 = Supports custom background photo
         </div>
       </div>
 

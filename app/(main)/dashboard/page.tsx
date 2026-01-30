@@ -2,94 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Plus, Trash2, Loader2, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { Profile, Match, MatchSet } from '@/lib/database.types'
-
-type MatchWithSets = Match & { match_sets: MatchSet[] }
+import { useUserStore } from '@/lib/stores/user-store'
+import type { MatchSet } from '@/lib/database.types'
 
 export default function DashboardPage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [matches, setMatches] = useState<MatchWithSets[]>([])
-  const [loading, setLoading] = useState(true)
+  const { profile, matches, stats, isGuest, isLoading, initialize, removeMatch } = useUserStore()
   const [deleteMatchId, setDeleteMatchId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isGuest, setIsGuest] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
-    async function loadData() {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) {
-        setIsGuest(true)
-        setLoading(false)
-        return
-      }
-
-      if (user) {
-        // Fetch profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-
-        if (profileData) {
-          // Auto-generate username from email if not set
-          if (!profileData.username && user.email) {
-            const generatedUsername = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '')
-            const { data: updatedProfile } = await supabase
-              .from('profiles')
-              .update({ username: generatedUsername })
-              .eq('id', user.id)
-              .select()
-              .single()
-
-            if (updatedProfile) {
-              setProfile(updatedProfile)
-            } else {
-              setProfile(profileData)
-            }
-          } else {
-            setProfile(profileData)
-          }
-        }
-
-        // Fetch matches with sets
-        const { data: matchesData } = await supabase
-          .from('matches')
-          .select('*, match_sets(*)')
-          .eq('user_id', user.id)
-          .order('played_at', { ascending: false })
-          .limit(10)
-
-        if (matchesData) {
-          setMatches(matchesData as MatchWithSets[])
-        }
-      }
-
-      setLoading(false)
-    }
-
-    loadData()
-  }, [supabase])
-
-  // Calculate stats
-  const totalMatches = matches.length
-  const wins = matches.filter(m => m.result === 'win').length
-  const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0
-
-  // Calculate streak
-  let streak = 0
-  for (const match of matches) {
-    if (match.result === 'win') {
-      streak++
-    } else {
-      break
-    }
-  }
+    initialize()
+  }, [initialize])
 
   // Format score from sets
   const formatScore = (matchSets: MatchSet[]) => {
@@ -132,7 +59,7 @@ export default function DashboardPage() {
         .eq('id', deleteMatchId)
 
       if (!error) {
-        setMatches(matches.filter(m => m.id !== deleteMatchId))
+        removeMatch(deleteMatchId)
       }
     } catch (err) {
       console.error('Delete failed:', err)
@@ -141,10 +68,22 @@ export default function DashboardPage() {
     setDeleteMatchId(null)
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-6">
+        {/* Animated Logo */}
+        <div className="text-4xl font-outfit font-black tracking-tight">
+          <span className="text-yellow-500 animate-pulse">MATCH</span>
+          <span className="text-gray-800 dark:text-white">POST</span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-48 space-y-2">
+          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
+          </div>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+        </div>
       </div>
     )
   }
@@ -192,10 +131,10 @@ export default function DashboardPage() {
       )}
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 pb-20 rounded-b-3xl">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-20 rounded-b-3xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-green-100 text-sm">{isGuest ? 'Demo Mode' : 'Welcome back'}</p>
+            <p className="text-yellow-800 text-sm">{isGuest ? 'Demo Mode' : 'Welcome back'}</p>
             <h1 className="text-2xl font-bold">{displayName} 👋</h1>
           </div>
           {isGuest ? (
@@ -212,9 +151,11 @@ export default function DashboardPage() {
               className="w-12 h-12 rounded-full overflow-hidden bg-white/20 flex items-center justify-center"
             >
               {profile?.avatar_url ? (
-                <img
+                <Image
                   src={profile.avatar_url}
                   alt={displayName}
+                  width={48}
+                  height={48}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none'
@@ -232,16 +173,16 @@ export default function DashboardPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
-            <div className="text-3xl font-bold">{totalMatches}</div>
-            <div className="text-xs text-green-100">Matches</div>
+            <div className="text-3xl font-bold">{stats.totalMatches}</div>
+            <div className="text-xs text-yellow-800">Matches</div>
           </div>
           <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
-            <div className="text-3xl font-bold">{winRate}%</div>
-            <div className="text-xs text-green-100">Win Rate</div>
+            <div className="text-3xl font-bold">{stats.winRate}%</div>
+            <div className="text-xs text-yellow-800">Win Rate</div>
           </div>
           <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
-            <div className="text-3xl font-bold">{streak > 0 ? `🔥${streak}` : '0'}</div>
-            <div className="text-xs text-green-100">Streak</div>
+            <div className="text-3xl font-bold">{stats.streak > 0 ? `🔥${stats.streak}` : '0'}</div>
+            <div className="text-xs text-yellow-800">Streak</div>
           </div>
         </div>
       </div>
@@ -251,9 +192,9 @@ export default function DashboardPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
           <Link
             href="/record"
-            className="flex items-center justify-center gap-3 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-xl p-4 transition-all"
+            className="flex items-center justify-center gap-3 bg-yellow-50 dark:bg-yellow-900/30 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 rounded-xl p-4 transition-all"
           >
-            <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white">
+            <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-gray-900">
               <Plus className="w-6 h-6" />
             </div>
             <span className="font-semibold text-lg text-gray-700 dark:text-gray-200">New Match</span>
@@ -274,7 +215,7 @@ export default function DashboardPage() {
                 </p>
                 <Link
                   href="/record"
-                  className="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-all"
+                  className="inline-block bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold text-sm px-4 py-2 rounded-lg transition-all"
                 >
                   Try it now →
                 </Link>
@@ -297,7 +238,7 @@ export default function DashboardPage() {
             </p>
             <Link
               href="/record"
-              className="text-green-600 dark:text-green-400 font-semibold mt-2 inline-block hover:underline"
+              className="text-yellow-600 dark:text-yellow-400 font-semibold mt-2 inline-block hover:underline"
             >
               {isGuest ? 'Try recording a demo match →' : 'Record your first match →'}
             </Link>
@@ -313,15 +254,24 @@ export default function DashboardPage() {
                   href={`/story-card?matchId=${match.id}`}
                   className="flex items-center gap-3 flex-1"
                 >
-                  <div className={`w-2 h-12 rounded-full ${match.result === 'win' ? 'bg-green-500' : 'bg-red-400'}`}></div>
+                  <div className={`w-2 h-12 rounded-full ${match.result === 'win' ? 'bg-yellow-500' : 'bg-red-400'}`}></div>
                   <div>
-                    <div className="font-semibold text-gray-800 dark:text-white">vs {match.opponent_name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-800 dark:text-white">
+                        vs {match.opponent_name}{match.match_type === 'doubles' && ` & ${match.opponent_partner_name || 'Partner'}`}
+                      </span>
+                      {match.match_type === 'doubles' && (
+                        <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded">
+                          2v2
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">{formatDate(match.played_at)}</div>
                   </div>
                 </Link>
                 <div className="flex items-center gap-3">
                   <Link href={`/story-card?matchId=${match.id}`} className="text-right">
-                    <div className={`font-bold ${match.result === 'win' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                    <div className={`font-bold ${match.result === 'win' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-500 dark:text-red-400'}`}>
                       {match.result === 'win' ? 'WIN' : match.result === 'loss' ? 'LOSS' : 'DRAW'}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">{formatScore(match.match_sets)}</div>

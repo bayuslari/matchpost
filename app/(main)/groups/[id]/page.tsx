@@ -30,7 +30,7 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header with Cover */}
-      <div className="bg-gradient-to-br from-green-600 to-green-400 text-white p-6 pb-20">
+      <div className="bg-gradient-to-br from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-20">
         <div className="flex items-center justify-between mb-4">
           <Link
             href="/groups"
@@ -48,7 +48,7 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
           </div>
           <div>
             <h1 className="text-2xl font-bold">{group.name}</h1>
-            <p className="text-green-100">{group.members} members • {group.privacy}</p>
+            <p className="text-yellow-800">{group.members} members • {group.privacy}</p>
           </div>
         </div>
       </div>
@@ -57,7 +57,7 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
       <div className="px-6 -mt-10">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
           <div className="flex border-b border-gray-100 dark:border-gray-700">
-            <button className="flex-1 py-4 text-center font-semibold text-green-600 dark:text-green-400 border-b-2 border-green-500">
+            <button className="flex-1 py-4 text-center font-semibold text-yellow-600 dark:text-yellow-400 border-b-2 border-yellow-500">
               Leaderboard
             </button>
             <button className="flex-1 py-4 text-center font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-all">

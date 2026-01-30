@@ -274,10 +274,10 @@ export default function ColorMockupPage() {
             onClick={() => setSelectedColor('yellow')}
             className="w-full text-left"
           >
-            <div className="bg-yellow-500 text-white p-3 flex items-center justify-between">
+            <div className="bg-yellow-500 text-gray-900 p-3 flex items-center justify-between">
               <div>
                 <span className="font-bold text-lg">Yellow</span>
-                <span className="ml-2 text-yellow-100 text-sm">#EAB308</span>
+                <span className="ml-2 text-yellow-800 text-sm">#EAB308</span>
               </div>
               {selectedColor === 'yellow' && (
                 <div className="bg-white rounded-full p-1">

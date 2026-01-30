@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { Search, X, User, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/database.types'
@@ -179,18 +180,20 @@ export default function UserSearchInput({
           value={value}
           onChange={handleInputChange}
           onFocus={() => value.length >= 2 && !selectedUser && setShowDropdown(true)}
-          className={`input pl-11 pr-10 ${selectedUser ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : ''}`}
+          className={`input pl-11 pr-10 ${selectedUser ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : ''}`}
         />
         <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6">
           {selectedUser ? (
             selectedUser.avatar_url ? (
-              <img
+              <Image
                 src={selectedUser.avatar_url}
                 alt=""
+                width={24}
+                height={24}
                 className="w-6 h-6 rounded-full object-cover"
               />
             ) : (
-              <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+              <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center">
                 <User className="w-3.5 h-3.5 text-white" />
               </div>
             )
@@ -222,7 +225,7 @@ export default function UserSearchInput({
 
       {/* Selected user indicator */}
       {selectedUser && (
-        <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+        <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 flex items-center gap-1">
           <span>✓</span> {isGuestMode ? 'Demo player' : `Linked to @${selectedUser.username}`}
         </p>
       )}
@@ -241,9 +244,11 @@ export default function UserSearchInput({
               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               {user.avatar_url ? (
-                <img
+                <Image
                   src={user.avatar_url}
                   alt=""
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                 />
               ) : (
@@ -257,7 +262,7 @@ export default function UserSearchInput({
                 </div>
                 {user.username && (
                   <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    @{user.username}{isGuestMode && user.location && ` • ${user.location}`}
+                    @{user.username}{user.location && ` • ${user.location}`}
                   </div>
                 )}
               </div>

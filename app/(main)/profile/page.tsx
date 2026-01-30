@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import type { Profile, Match } from '@/lib/database.types'
+import { useUserStore } from '@/lib/stores/user-store'
 import {
   BarChart3,
   Trophy,
@@ -32,67 +33,15 @@ const settingsItems = [
 export default function ProfilePage() {
   const router = useRouter()
   const supabase = createClient()
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [stats, setStats] = useState({ matches: 0, wins: 0, losses: 0, winRate: 0 })
-  const [loading, setLoading] = useState(true)
+  const { profile, stats, isLoading, initialize, reset } = useUserStore()
 
   useEffect(() => {
-    async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (user) {
-        // Fetch profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-
-        if (profileData) {
-          // Auto-generate username from email if not set
-          if (!profileData.username && user.email) {
-            const generatedUsername = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '')
-            const { data: updatedProfile } = await supabase
-              .from('profiles')
-              .update({ username: generatedUsername })
-              .eq('id', user.id)
-              .select()
-              .single()
-
-            if (updatedProfile) {
-              setProfile(updatedProfile)
-            } else {
-              setProfile(profileData)
-            }
-          } else {
-            setProfile(profileData)
-          }
-        }
-
-        // Fetch matches for stats
-        const { data: matchesData } = await supabase
-          .from('matches')
-          .select('result')
-          .eq('user_id', user.id)
-
-        if (matchesData && matchesData.length > 0) {
-          const total = matchesData.length
-          const wins = matchesData.filter((m: { result: string | null }) => m.result === 'win').length
-          const losses = matchesData.filter((m: { result: string | null }) => m.result === 'loss').length
-          const winRate = total > 0 ? Math.round((wins / total) * 100) : 0
-
-          setStats({ matches: total, wins, losses, winRate })
-        }
-      }
-
-      setLoading(false)
-    }
-
-    loadData()
-  }, [supabase])
+    initialize()
+  }, [initialize])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
+    reset()
     router.push('/')
   }
 
@@ -100,10 +49,22 @@ export default function ProfilePage() {
   const username = profile?.username ? `@${profile.username}` : ''
   const location = profile?.location || ''
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-6">
+        {/* Animated Logo */}
+        <div className="text-4xl font-outfit font-black tracking-tight">
+          <span className="text-yellow-500 animate-pulse">MATCH</span>
+          <span className="text-gray-800 dark:text-white">POST</span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-48 space-y-2">
+          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
+          </div>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+        </div>
       </div>
     )
   }
@@ -111,16 +72,18 @@ export default function ProfilePage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 pb-24 rounded-b-3xl">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-24 rounded-b-3xl">
         <h1 className="text-xl font-bold mb-6">Profile</h1>
 
         {/* Profile Info */}
         <div className="flex items-center gap-4">
           <div className="w-20 h-20 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
             {profile?.avatar_url ? (
-              <img
+              <Image
                 src={profile.avatar_url}
                 alt={displayName}
+                width={80}
+                height={80}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none'
@@ -134,8 +97,8 @@ export default function ProfilePage() {
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-bold">{displayName}</h2>
-            {username && <p className="text-green-100">{username}</p>}
-            {location && <p className="text-green-100 text-sm mt-1">📍 {location}</p>}
+            {username && <p className="text-yellow-800">{username}</p>}
+            {location && <p className="text-yellow-800 text-sm mt-1">📍 {location}</p>}
           </div>
           <Link
             href="/profile/edit"
@@ -151,11 +114,11 @@ export default function ProfilePage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <div className="grid grid-cols-4 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats.matches}</div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats.totalMatches}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400">Matches</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.wins}</div>
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.wins}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400">Wins</div>
             </div>
             <div>
