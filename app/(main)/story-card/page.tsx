@@ -255,8 +255,10 @@ function StoryCardContent() {
   const opponentSetsWon = sortedSets.filter(s => s.opponent_score > s.player_score).length
   const isPlayerWinner = playerSetsWon > opponentSetsWon
 
-  // Get display name
-  const displayName = profile?.full_name || profile?.username || 'You'
+  // Get display name - prefer username for privacy, fallback to full name
+  const displayName = profile?.username
+    ? `@${profile.username}`
+    : profile?.full_name || 'You'
 
   if (loading) {
     return (
@@ -379,12 +381,21 @@ function StoryCardContent() {
 
                 {/* Player Row - You */}
                 <div className="bg-white px-3 py-2.5 flex items-center gap-2 border-b border-gray-100">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" crossOrigin="anonymous" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">👤</div>
-                    )}
+                      <img
+                        src={profile.avatar_url}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                        }}
+                      />
+                    ) : null}
+                    <svg className={`w-5 h-5 text-gray-400 ${profile?.avatar_url ? 'hidden' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm text-gray-900 truncate">
@@ -412,8 +423,10 @@ function StoryCardContent() {
 
                 {/* Opponent Row */}
                 <div className="bg-white px-3 py-2.5 flex items-center gap-2 rounded-b-xl">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">👤</div>
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm text-gray-900 truncate">

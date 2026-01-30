@@ -30,7 +30,24 @@ export default function DashboardPage() {
           .single()
 
         if (profileData) {
-          setProfile(profileData)
+          // Auto-generate username from email if not set
+          if (!profileData.username && user.email) {
+            const generatedUsername = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '')
+            const { data: updatedProfile } = await supabase
+              .from('profiles')
+              .update({ username: generatedUsername })
+              .eq('id', user.id)
+              .select()
+              .single()
+
+            if (updatedProfile) {
+              setProfile(updatedProfile)
+            } else {
+              setProfile(profileData)
+            }
+          } else {
+            setProfile(profileData)
+          }
         }
 
         // Fetch matches with sets
@@ -174,17 +191,22 @@ export default function DashboardPage() {
             <p className="text-green-100 text-sm">Welcome back</p>
             <h1 className="text-2xl font-bold">{displayName} 👋</h1>
           </div>
-          {profile?.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={displayName}
-              className="w-12 h-12 rounded-full"
-            />
-          ) : (
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl">
-              🎾
-            </div>
-          )}
+          <div className="w-12 h-12 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={displayName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                }}
+              />
+            ) : null}
+            <svg className={`w-6 h-6 text-white/70 ${profile?.avatar_url ? 'hidden' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </div>
         </div>
 
         {/* Stats Cards */}
