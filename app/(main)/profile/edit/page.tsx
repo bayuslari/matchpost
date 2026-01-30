@@ -20,7 +20,7 @@ export default function EditProfilePage() {
   const [fullName, setFullName] = useState('')
   const [location, setLocation] = useState('')
   const [bio, setBio] = useState('')
-  const [skillLevel, setSkillLevel] = useState<string>('')
+  const [skillLevel, setSkillLevel] = useState<'beginner' | 'intermediate' | 'advanced' | 'pro' | ''>('')
 
   useEffect(() => {
     async function loadProfile() {
@@ -68,7 +68,7 @@ export default function EditProfilePage() {
         full_name: fullName || null,
         location: location || null,
         bio: bio || null,
-        skill_level: skillLevel || null,
+        skill_level: skillLevel === '' ? null : skillLevel,
       })
       .eq('id', profile.id)
 
@@ -198,7 +198,7 @@ export default function EditProfilePage() {
           </label>
           <select
             value={skillLevel}
-            onChange={(e) => setSkillLevel(e.target.value)}
+            onChange={(e) => setSkillLevel(e.target.value as 'beginner' | 'intermediate' | 'advanced' | 'pro' | '')}
             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
             <option value="">Select skill level</option>
