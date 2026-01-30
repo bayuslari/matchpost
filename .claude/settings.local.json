@@ -3,7 +3,17 @@
     "allow": [
       "Bash(pnpm dev:*)",
       "Bash(pnpm build:*)",
-      "Bash(pnpm update:*)"
+      "Bash(pnpm update:*)",
+      "Bash(git lfs:*)",
+      "Bash(git add:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: correct skillLevel type in profile edit page\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)",
+      "Bash(ls:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: improve story card export quality\n\n- Increase export scale from 2x to 3x for sharper images\n- Add quality: 1 for maximum PNG quality\n- Increase preview card size from 256x450 to 288x504\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add system dark mode support\n\n- Enable dark mode in Tailwind config \\(follows system preference\\)\n- Add dark mode styles to dashboard, profile, profile edit pages\n- Add dark mode to bottom navigation\n- Dark backgrounds, cards, text, and form fields\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npm run build:*)"
     ]
   }
 }

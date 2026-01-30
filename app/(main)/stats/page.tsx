@@ -121,8 +121,8 @@ export default function StatsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
       </div>
     )
   }
@@ -133,7 +133,7 @@ export default function StatsPage() {
   )
 
   return (
-    <div className="min-h-dvh bg-gray-50 pb-24">
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 pb-8">
         <div className="flex items-center gap-4 mb-2">
@@ -148,32 +148,32 @@ export default function StatsPage() {
       <div className="px-6 -mt-4 space-y-4">
         {/* Overview Cards */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center gap-2 text-gray-500 mb-2">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">
               <BarChart3 className="w-4 h-4" />
               <span className="text-sm">Total Matches</span>
             </div>
-            <div className="text-3xl font-bold text-gray-800">{stats.totalMatches}</div>
+            <div className="text-3xl font-bold text-gray-800 dark:text-white">{stats.totalMatches}</div>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center gap-2 text-gray-500 mb-2">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">
               <Target className="w-4 h-4" />
               <span className="text-sm">Win Rate</span>
             </div>
-            <div className="text-3xl font-bold text-green-600">{stats.winRate}%</div>
+            <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.winRate}%</div>
           </div>
         </div>
 
         {/* Win/Loss Card */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="font-semibold text-gray-800 mb-4">Win / Loss</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+          <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Win / Loss</h3>
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-green-600 font-medium">{stats.wins} Wins</span>
-                <span className="text-red-500 font-medium">{stats.losses} Losses</span>
+                <span className="text-green-600 dark:text-green-400 font-medium">{stats.wins} Wins</span>
+                <span className="text-red-500 dark:text-red-400 font-medium">{stats.losses} Losses</span>
               </div>
-              <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
+              <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex">
                 {stats.totalMatches > 0 ? (
                   <>
                     <div
@@ -186,7 +186,7 @@ export default function StatsPage() {
                     ></div>
                   </>
                 ) : (
-                  <div className="bg-gray-200 h-full w-full"></div>
+                  <div className="bg-gray-200 dark:bg-gray-600 h-full w-full"></div>
                 )}
               </div>
             </div>
@@ -194,18 +194,18 @@ export default function StatsPage() {
         </div>
 
         {/* Streak Card */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <h3 className="font-semibold text-gray-800 mb-4">Streaks</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+          <h3 className="font-semibold text-gray-800 dark:text-white mb-4">Streaks</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-sm text-gray-500 mb-1">Current Streak</div>
-              <div className="text-2xl font-bold text-orange-500">
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Current Streak</div>
+              <div className="text-2xl font-bold text-orange-500 dark:text-orange-400">
                 {stats.currentStreak > 0 ? `🔥 ${stats.currentStreak}` : '0'}
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500 mb-1">Longest Streak</div>
-              <div className="text-2xl font-bold text-gray-800">
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Longest Streak</div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white">
                 {stats.longestStreak > 0 ? `🏆 ${stats.longestStreak}` : '0'}
               </div>
             </div>
@@ -213,10 +213,10 @@ export default function StatsPage() {
         </div>
 
         {/* Monthly Chart */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-800">Monthly Performance</h3>
-            <TrendingUp className="w-5 h-5 text-green-500" />
+            <h3 className="font-semibold text-gray-800 dark:text-white">Monthly Performance</h3>
+            <TrendingUp className="w-5 h-5 text-green-500 dark:text-green-400" />
           </div>
 
           {monthlyData.length > 0 && monthlyData.some(d => d.wins > 0 || d.losses > 0) ? (
@@ -245,7 +245,7 @@ export default function StatsPage() {
                           ></div>
                         )}
                       </div>
-                      <span className="text-xs text-gray-500">{data.month}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{data.month}</span>
                     </div>
                   )
                 })}
@@ -253,19 +253,19 @@ export default function StatsPage() {
               <div className="flex justify-center gap-6 mt-4 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span className="text-gray-500">Wins</span>
+                  <span className="text-gray-500 dark:text-gray-400">Wins</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 bg-red-400 rounded"></div>
-                  <span className="text-gray-500">Losses</span>
+                  <span className="text-gray-500 dark:text-gray-400">Losses</span>
                 </div>
               </div>
             </>
           ) : (
-            <div className="text-center py-8 text-gray-400">
+            <div className="text-center py-8 text-gray-400 dark:text-gray-500">
               <div className="text-2xl mb-2">📊</div>
               <p className="text-sm">No match data yet</p>
-              <Link href="/record" className="text-green-600 text-sm hover:underline">
+              <Link href="/record" className="text-green-600 dark:text-green-400 text-sm hover:underline">
                 Record your first match
               </Link>
             </div>

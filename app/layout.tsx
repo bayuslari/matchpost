@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   title: 'MatchPost - Share Your Tennis Victories',
   description: 'Record your tennis matches and share to Instagram',
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'MatchPost',
+  },
 }
 
 export const viewport: Viewport = {
@@ -19,7 +24,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#16a34a',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#16a34a' },
+    { media: '(prefers-color-scheme: dark)', color: '#111827' },
+  ],
   viewportFit: 'cover',
 }
 
