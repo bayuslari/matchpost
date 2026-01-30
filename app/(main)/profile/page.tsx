@@ -84,14 +84,14 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-dvh bg-gray-50 pb-24">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 pb-24 rounded-b-3xl">
         <div className="flex items-center justify-between mb-6">

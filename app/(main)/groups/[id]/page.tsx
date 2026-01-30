@@ -28,7 +28,7 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
+    <div className="min-h-dvh bg-gray-50 pb-8">
       {/* Header with Cover */}
       <div className="bg-gradient-to-br from-green-600 to-green-400 text-white p-6 pb-20">
         <div className="flex items-center justify-between mb-4">

@@ -17,7 +17,7 @@ const discoverGroups = [
 
 export default function GroupsPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-gray-50">
       {/* Header */}
       <div className="bg-white p-4 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-4">

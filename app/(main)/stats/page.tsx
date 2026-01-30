@@ -121,7 +121,7 @@ export default function StatsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
       </div>
     )
@@ -133,7 +133,7 @@ export default function StatsPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-dvh bg-gray-50 pb-24">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 pb-8">
         <div className="flex items-center gap-4 mb-2">

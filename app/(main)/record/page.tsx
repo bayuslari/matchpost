@@ -100,7 +100,7 @@ export default function RecordMatchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
+    <div className="min-h-dvh bg-gray-50 pb-8">
       {/* Header */}
       <div className="bg-white p-4 border-b border-gray-100 flex items-center gap-4">
         <Link

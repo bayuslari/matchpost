@@ -182,7 +182,7 @@ function StoryCardContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-dvh bg-gray-900 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-white animate-spin" />
       </div>
     )
@@ -190,7 +190,7 @@ function StoryCardContent() {
 
   if (!match) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-white p-6">
+      <div className="min-h-dvh bg-gray-900 flex flex-col items-center justify-center text-white p-6">
         <div className="text-4xl mb-4">🎾</div>
         <p className="text-gray-400 mb-4">Match not found</p>
         <Link href="/dashboard" className="text-green-400 hover:underline">
@@ -201,7 +201,7 @@ function StoryCardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 pb-8">
+    <div className="min-h-dvh bg-gray-900 pb-8">
       {/* Header */}
       <div className="bg-gray-900 p-4 flex items-center justify-between text-white">
         <Link
@@ -390,7 +390,7 @@ function StoryCardContent() {
 export default function StoryCardPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-dvh bg-gray-900 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-white animate-spin" />
       </div>
     }>
