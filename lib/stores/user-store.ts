@@ -173,7 +173,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   // Add match locally
   addMatch: (match) => {
     const { matches } = get()
-    const newMatches = [match, ...matches].slice(0, 10)
+    const newMatches = [match, ...matches]
     const stats = calculateStats(newMatches)
     set({ matches: newMatches, stats })
   },
@@ -206,7 +206,7 @@ function calculateStats(matches: MatchWithSets[]) {
   const losses = matches.filter(m => m.result === 'loss').length
   const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0
 
-  // Calculate streak
+  // Calculate current streak (matches are already sorted desc by played_at)
   let streak = 0
   for (const match of matches) {
     if (match.result === 'win') {
@@ -216,5 +216,51 @@ function calculateStats(matches: MatchWithSets[]) {
     }
   }
 
-  return { totalMatches, wins, losses, winRate, streak }
+  // Calculate longest streak (sort ascending for this calculation)
+  let longestStreak = 0
+  let tempStreak = 0
+  const sortedMatches = [...matches].sort((a, b) =>
+    new Date(a.played_at).getTime() - new Date(b.played_at).getTime()
+  )
+  for (const match of sortedMatches) {
+    if (match.result === 'win') {
+      tempStreak++
+      longestStreak = Math.max(longestStreak, tempStreak)
+    } else {
+      tempStreak = 0
+    }
+  }
+
+  // Calculate monthly data (last 4 months)
+  const monthlyMap = new Map<string, { wins: number; losses: number }>()
+  const now = new Date()
+
+  // Initialize last 4 months
+  for (let i = 3; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = date.toLocaleDateString('en-US', { month: 'short' })
+    monthlyMap.set(key, { wins: 0, losses: 0 })
+  }
+
+  // Count matches per month
+  for (const match of matches) {
+    const matchDate = new Date(match.played_at)
+    const monthKey = matchDate.toLocaleDateString('en-US', { month: 'short' })
+
+    if (monthlyMap.has(monthKey)) {
+      const current = monthlyMap.get(monthKey)!
+      if (match.result === 'win') {
+        current.wins++
+      } else if (match.result === 'loss') {
+        current.losses++
+      }
+    }
+  }
+
+  const monthlyData: MonthlyData[] = []
+  monthlyMap.forEach((value, key) => {
+    monthlyData.push({ month: key, ...value })
+  })
+
+  return { totalMatches, wins, losses, winRate, streak, longestStreak, monthlyData }
 }

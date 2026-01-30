@@ -1,130 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { BarChart3, TrendingUp, Target, ArrowLeft } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { useUserStore } from '@/lib/stores/user-store'
 
-type MonthlyData = {
-  month: string
-  wins: number
-  losses: number
-}
-
 export default function StatsPage() {
-  const supabase = createClient()
-  const { isInitialized, initialize } = useUserStore()
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    totalMatches: 0,
-    wins: 0,
-    losses: 0,
-    winRate: 0,
-    currentStreak: 0,
-    longestStreak: 0,
-  })
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
+  const { stats, isLoading, initialize } = useUserStore()
 
   useEffect(() => {
-    // Initialize store if not already done
     initialize()
+  }, [initialize])
 
-    async function loadStats() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setLoading(false)
-        return
-      }
-
-      // Fetch all matches
-      const { data: matches } = await supabase
-        .from('matches')
-        .select('result, played_at')
-        .eq('user_id', user.id)
-        .order('played_at', { ascending: false })
-
-      if (matches) {
-        const totalMatches = matches.length
-        const wins = matches.filter(m => m.result === 'win').length
-        const losses = matches.filter(m => m.result === 'loss').length
-        const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0
-
-        // Calculate current streak
-        let currentStreak = 0
-        for (const match of matches) {
-          if (match.result === 'win') {
-            currentStreak++
-          } else {
-            break
-          }
-        }
-
-        // Calculate longest streak
-        let longestStreak = 0
-        let tempStreak = 0
-        // Sort by date ascending for longest streak calculation
-        const sortedMatches = [...matches].sort((a, b) =>
-          new Date(a.played_at).getTime() - new Date(b.played_at).getTime()
-        )
-        for (const match of sortedMatches) {
-          if (match.result === 'win') {
-            tempStreak++
-            longestStreak = Math.max(longestStreak, tempStreak)
-          } else {
-            tempStreak = 0
-          }
-        }
-
-        setStats({
-          totalMatches,
-          wins,
-          losses,
-          winRate,
-          currentStreak,
-          longestStreak,
-        })
-
-        // Calculate monthly data (last 4 months)
-        const monthlyMap = new Map<string, { wins: number; losses: number }>()
-        const now = new Date()
-
-        // Initialize last 4 months
-        for (let i = 3; i >= 0; i--) {
-          const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-          const key = date.toLocaleDateString('en-US', { month: 'short' })
-          monthlyMap.set(key, { wins: 0, losses: 0 })
-        }
-
-        // Count matches per month
-        for (const match of matches) {
-          const matchDate = new Date(match.played_at)
-          const monthKey = matchDate.toLocaleDateString('en-US', { month: 'short' })
-
-          if (monthlyMap.has(monthKey)) {
-            const current = monthlyMap.get(monthKey)!
-            if (match.result === 'win') {
-              current.wins++
-            } else if (match.result === 'loss') {
-              current.losses++
-            }
-          }
-        }
-
-        const monthlyArray: MonthlyData[] = []
-        monthlyMap.forEach((value, key) => {
-          monthlyArray.push({ month: key, ...value })
-        })
-        setMonthlyData(monthlyArray)
-      }
-
-      setLoading(false)
-    }
-
-    loadStats()
-  }, [supabase])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-6">
         {/* Animated Logo */}
@@ -144,6 +32,7 @@ export default function StatsPage() {
     )
   }
 
+  const { monthlyData } = stats
   const maxMonthlyValue = Math.max(
     ...monthlyData.map(d => d.wins + d.losses),
     1
@@ -217,7 +106,7 @@ export default function StatsPage() {
             <div>
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Current Streak</div>
               <div className="text-2xl font-bold text-orange-500 dark:text-orange-400">
-                {stats.currentStreak > 0 ? `🔥 ${stats.currentStreak}` : '0'}
+                {stats.streak > 0 ? `🔥 ${stats.streak}` : '0'}
               </div>
             </div>
             <div>
