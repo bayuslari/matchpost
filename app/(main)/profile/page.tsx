@@ -57,10 +57,10 @@ export default function ProfilePage() {
           .select('result')
           .eq('user_id', user.id)
 
-        if (matchesData) {
+        if (matchesData && matchesData.length > 0) {
           const total = matchesData.length
-          const wins = matchesData.filter(m => m.result === 'win').length
-          const losses = matchesData.filter(m => m.result === 'loss').length
+          const wins = matchesData.filter((m: { result: string | null }) => m.result === 'win').length
+          const losses = matchesData.filter((m: { result: string | null }) => m.result === 'loss').length
           const winRate = total > 0 ? Math.round((wins / total) * 100) : 0
 
           setStats({ matches: total, wins, losses, winRate })

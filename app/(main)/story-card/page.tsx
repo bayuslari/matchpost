@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Camera, Trash2, Download, Share2, Loader2 } from 'lucide-react'
@@ -16,7 +16,7 @@ const templates = [
 
 type MatchWithSets = Match & { match_sets: MatchSet[] }
 
-export default function StoryCardPage() {
+function StoryCardContent() {
   const searchParams = useSearchParams()
   const matchId = searchParams.get('matchId')
   const supabase = createClient()
@@ -384,5 +384,17 @@ export default function StoryCardPage() {
         </button>
       </div>
     </div>
+  )
+}
+
+export default function StoryCardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      </div>
+    }>
+      <StoryCardContent />
+    </Suspense>
   )
 }

@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
@@ -43,6 +43,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       matches: {
         Row: {
@@ -63,7 +64,7 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          match_type: 'singles' | 'doubles'
+          match_type?: 'singles' | 'doubles'
           opponent_name: string
           partner_name?: string | null
           opponent_partner_name?: string | null
@@ -90,6 +91,15 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "matches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       match_sets: {
         Row: {
@@ -119,6 +129,15 @@ export interface Database {
           tiebreak_player?: number | null
           tiebreak_opponent?: number | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "match_sets_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       groups: {
         Row: {
@@ -154,6 +173,15 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       group_members: {
         Row: {
@@ -177,27 +205,35 @@ export interface Database {
           role?: 'admin' | 'moderator' | 'member'
           joined_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
-      user_stats: {
-        Row: {
-          user_id: string
-          total_matches: number
-          wins: number
-          losses: number
-          draws: number
-          win_percentage: number | null
-          singles_matches: number
-          doubles_matches: number
-        }
-      }
+      [_ in never]: never
     }
     Functions: {
-      calculate_match_result: {
-        Args: { p_match_id: string }
-        Returns: string
-      }
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
@@ -222,8 +258,6 @@ export type GroupUpdate = Database['public']['Tables']['groups']['Update']
 export type GroupMember = Database['public']['Tables']['group_members']['Row']
 export type GroupMemberInsert = Database['public']['Tables']['group_members']['Insert']
 export type GroupMemberUpdate = Database['public']['Tables']['group_members']['Update']
-
-export type UserStats = Database['public']['Views']['user_stats']['Row']
 
 // Extended types with relations
 export type MatchWithSets = Match & {
