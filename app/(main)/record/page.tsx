@@ -30,7 +30,10 @@ export default function RecordMatchPage() {
   const [opponent2, setOpponent2] = useState('')
   const [opponent2User, setOpponent2User] = useState<Profile | null>(null)
   const [location, setLocation] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 

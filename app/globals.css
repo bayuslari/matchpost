@@ -64,6 +64,15 @@
     @apply w-full p-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all placeholder-gray-400;
   }
 
+  /* Fix date input for iOS Safari */
+  input[type="date"] {
+    @apply text-left appearance-none py-3;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
+
   /* Fix date input calendar icon in dark mode */
   input[type="date"]::-webkit-calendar-picker-indicator {
     @apply dark:invert dark:opacity-70;
@@ -95,19 +104,17 @@
 /* Loading bar animation */
 @keyframes loading-bar {
   0% {
-    width: 0%;
-    margin-left: 0%;
+    transform: translateX(-100%);
   }
   50% {
-    width: 60%;
-    margin-left: 20%;
+    transform: translateX(0%);
   }
   100% {
-    width: 0%;
-    margin-left: 100%;
+    transform: translateX(100%);
   }
 }
 
 .animate-loading-bar {
-  animation: loading-bar 1.5s ease-in-out infinite;
+  width: 50%;
+  animation: loading-bar 1.2s ease-in-out infinite;
 }
