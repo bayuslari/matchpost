@@ -139,70 +139,78 @@ function StoryCardContent() {
   }
 
   const handleShare = async () => {
-    const html2canvas = (await import('html2canvas')).default
+    const { domToBlob } = await import('modern-screenshot')
 
     if (!cardRef.current) return
 
     try {
-      const canvas = await html2canvas(cardRef.current, {
+      // Temporarily remove border-radius for export
+      const originalBorderRadius = cardRef.current.style.borderRadius
+      cardRef.current.style.borderRadius = '0'
+
+      const blob = await domToBlob(cardRef.current, {
         scale: 2,
-        useCORS: true,
-        allowTaint: false,
         backgroundColor: '#1a6b9c',
-        logging: false,
-        onclone: (clonedDoc) => {
-          // Remove border-radius for export and fix styles
-          const clonedElement = clonedDoc.querySelector('[data-card]') as HTMLElement
-          if (clonedElement) {
-            clonedElement.style.borderRadius = '0'
-            clonedElement.style.fontFamily = '"Outfit", sans-serif'
-          }
+        style: {
+          borderRadius: '0',
         }
       })
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) return
+      // Restore border-radius
+      cardRef.current.style.borderRadius = originalBorderRadius
 
-        const file = new File([blob], 'matchpost-match.png', { type: 'image/png' })
+      if (!blob) return
 
-        if (navigator.share && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: 'My Tennis Match',
-              text: `I ${match?.result === 'win' ? 'won' : 'played'} ${formatScore()} against ${match?.opponent_name}! 🎾`,
-            })
-          } catch (err) {
-            console.log('Share cancelled or failed:', err)
-          }
-        } else {
-          downloadImage(canvas)
+      const file = new File([blob], 'matchpost-match.png', { type: 'image/png' })
+
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'My Tennis Match',
+            text: `I ${match?.result === 'win' ? 'won' : 'played'} ${formatScore()} against ${match?.opponent_name}! 🎾`,
+          })
+        } catch (err) {
+          console.log('Share cancelled or failed:', err)
         }
-      }, 'image/png')
+      } else {
+        downloadImage(blob)
+      }
     } catch (err) {
       console.error('Failed to generate image:', err)
     }
   }
 
-  const downloadImage = async (existingCanvas?: HTMLCanvasElement) => {
-    let canvas = existingCanvas
+  const downloadImage = async (existingBlob?: Blob) => {
+    let blob = existingBlob
 
-    if (!canvas) {
-      const html2canvas = (await import('html2canvas')).default
+    if (!blob) {
+      const { domToBlob } = await import('modern-screenshot')
       if (!cardRef.current) return
-      canvas = await html2canvas(cardRef.current, {
+
+      // Temporarily remove border-radius for export
+      const originalBorderRadius = cardRef.current.style.borderRadius
+      cardRef.current.style.borderRadius = '0'
+
+      blob = await domToBlob(cardRef.current, {
         scale: 2,
-        useCORS: true,
-        allowTaint: false,
         backgroundColor: '#1a6b9c',
-        logging: false,
+        style: {
+          borderRadius: '0',
+        }
       })
+
+      // Restore border-radius
+      cardRef.current.style.borderRadius = originalBorderRadius
     }
+
+    if (!blob) return
 
     const link = document.createElement('a')
     link.download = 'matchpost-match.png'
-    link.href = canvas.toDataURL('image/png')
+    link.href = URL.createObjectURL(blob)
     link.click()
+    URL.revokeObjectURL(link.href)
   }
 
   const handleDelete = async () => {
