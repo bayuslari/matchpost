@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useUserStore } from '@/lib/stores/user-store'
 import type { Profile } from '@/lib/database.types'
 import { ArrowLeft, Loader2, Check } from 'lucide-react'
+import LocationInput from '@/components/location-input'
 
 export default function EditProfilePage() {
   const router = useRouter()
@@ -193,12 +194,10 @@ export default function EditProfilePage() {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Location
           </label>
-          <input
-            type="text"
+          <LocationInput
             value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            onChange={setLocation}
             placeholder="City, Country"
-            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-400"
           />
         </div>
 
