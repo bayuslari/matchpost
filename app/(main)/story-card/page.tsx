@@ -149,7 +149,8 @@ function StoryCardContent() {
       cardRef.current.style.borderRadius = '0'
 
       const blob = await domToBlob(cardRef.current, {
-        scale: 2,
+        scale: 3,
+        quality: 1,
         backgroundColor: '#1a6b9c',
         style: {
           borderRadius: '0',
@@ -193,7 +194,8 @@ function StoryCardContent() {
       cardRef.current.style.borderRadius = '0'
 
       blob = await domToBlob(cardRef.current, {
-        scale: 2,
+        scale: 3,
+        quality: 1,
         backgroundColor: '#1a6b9c',
         style: {
           borderRadius: '0',
@@ -349,7 +351,7 @@ function StoryCardContent() {
           <div
             ref={cardRef}
             data-card
-            className="mx-auto w-64 h-[450px] rounded-3xl overflow-hidden shadow-2xl relative bg-[#1a6b9c]"
+            className="mx-auto w-72 h-[504px] rounded-3xl overflow-hidden shadow-2xl relative bg-[#1a6b9c]"
           >
             {/* Background Image */}
             <img
@@ -477,7 +479,7 @@ function StoryCardContent() {
           /* Original Templates */
           <div
             ref={cardRef}
-            className={`mx-auto w-64 h-[450px] rounded-3xl overflow-hidden shadow-2xl relative ${
+            className={`mx-auto w-72 h-[504px] rounded-3xl overflow-hidden shadow-2xl relative ${
               hasCustomBg ? '' : `bg-gradient-to-br ${templates.find(t => t.id === selectedTemplate)?.gradient || templates[0].gradient}`
             }`}
             style={hasCustomBg ? {
