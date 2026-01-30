@@ -28,11 +28,11 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 pb-8">
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header with Cover */}
       <div className="bg-gradient-to-br from-green-600 to-green-400 text-white p-6 pb-20">
         <div className="flex items-center justify-between mb-4">
-          <Link 
+          <Link
             href="/groups"
             className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-all"
           >
@@ -55,15 +55,15 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
 
       {/* Tabs */}
       <div className="px-6 -mt-10">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          <div className="flex border-b border-gray-100">
-            <button className="flex-1 py-4 text-center font-semibold text-green-600 border-b-2 border-green-500">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+          <div className="flex border-b border-gray-100 dark:border-gray-700">
+            <button className="flex-1 py-4 text-center font-semibold text-green-600 dark:text-green-400 border-b-2 border-green-500">
               Leaderboard
             </button>
-            <button className="flex-1 py-4 text-center font-semibold text-gray-400 hover:text-gray-600 transition-all">
+            <button className="flex-1 py-4 text-center font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
               Matches
             </button>
-            <button className="flex-1 py-4 text-center font-semibold text-gray-400 hover:text-gray-600 transition-all">
+            <button className="flex-1 py-4 text-center font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
               Members
             </button>
           </div>
@@ -74,58 +74,58 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
             <div className="flex justify-center items-end gap-4 mb-6 pt-4">
               {/* 2nd Place */}
               <div className="text-center">
-                <div className="w-14 h-14 bg-gray-200 rounded-full mx-auto mb-2 flex items-center justify-center text-xl">
+                <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-2 flex items-center justify-center text-xl">
                   👤
                 </div>
-                <div className="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-full mb-1">
+                <div className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-bold px-2 py-1 rounded-full mb-1">
                   🥈 2nd
                 </div>
-                <div className="text-sm font-semibold">{topPlayers[1].name}</div>
-                <div className="text-xs text-gray-500">{topPlayers[1].points} pts</div>
+                <div className="text-sm font-semibold text-gray-800 dark:text-white">{topPlayers[1].name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{topPlayers[1].points} pts</div>
               </div>
-              
+
               {/* 1st Place */}
               <div className="text-center -mt-4">
-                <div className="w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl ring-4 ring-yellow-400">
+                <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl ring-4 ring-yellow-400">
                   👤
                 </div>
                 <div className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full mb-1">
                   🥇 1st
                 </div>
-                <div className="text-sm font-bold">{topPlayers[0].name}</div>
-                <div className="text-xs text-gray-500">{topPlayers[0].points} pts</div>
+                <div className="text-sm font-bold text-gray-800 dark:text-white">{topPlayers[0].name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{topPlayers[0].points} pts</div>
               </div>
-              
+
               {/* 3rd Place */}
               <div className="text-center">
-                <div className="w-14 h-14 bg-orange-100 rounded-full mx-auto mb-2 flex items-center justify-center text-xl">
+                <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-full mx-auto mb-2 flex items-center justify-center text-xl">
                   👤
                 </div>
-                <div className="bg-orange-200 text-orange-700 text-xs font-bold px-2 py-1 rounded-full mb-1">
+                <div className="bg-orange-200 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 text-xs font-bold px-2 py-1 rounded-full mb-1">
                   🥉 3rd
                 </div>
-                <div className="text-sm font-semibold">{topPlayers[2].name}</div>
-                <div className="text-xs text-gray-500">{topPlayers[2].points} pts</div>
+                <div className="text-sm font-semibold text-gray-800 dark:text-white">{topPlayers[2].name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{topPlayers[2].points} pts</div>
               </div>
             </div>
 
             {/* Rest of Leaderboard */}
             <div className="space-y-2">
               {otherPlayers.map((player) => (
-                <div 
+                <div
                   key={player.rank}
-                  className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl"
+                  className="flex items-center justify-between py-3 px-4 bg-gray-50 dark:bg-gray-900 rounded-xl"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-6 text-center font-bold text-gray-400">{player.rank}</span>
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="w-6 text-center font-bold text-gray-400 dark:text-gray-500">{player.rank}</span>
+                    <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
                       👤
                     </div>
-                    <span className="font-medium">{player.name}</span>
+                    <span className="font-medium text-gray-800 dark:text-white">{player.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm">{player.badge}</span>
-                    <span className="font-semibold text-gray-600">{player.points} pts</span>
+                    <span className="font-semibold text-gray-600 dark:text-gray-300">{player.points} pts</span>
                   </div>
                 </div>
               ))}
@@ -136,7 +136,7 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
 
       {/* Record Match in Group */}
       <div className="px-6 mt-6">
-        <Link 
+        <Link
           href="/record"
           className="w-full btn-primary flex items-center justify-center gap-2"
         >

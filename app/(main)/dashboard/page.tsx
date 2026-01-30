@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Users, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Users, Trash2, Loader2, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
 
@@ -14,12 +14,19 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [deleteMatchId, setDeleteMatchId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isGuest, setIsGuest] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
     async function loadData() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        setIsGuest(true)
+        setLoading(false)
+        return
+      }
 
       if (user) {
         // Fetch profile
@@ -105,7 +112,7 @@ export default function DashboardPage() {
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
   }
 
-  const displayName = profile?.full_name || profile?.username || 'Player'
+  const displayName = isGuest ? 'Guest' : (profile?.full_name || profile?.username || 'Player')
 
   const handleDelete = async () => {
     if (!deleteMatchId) return
@@ -188,25 +195,38 @@ export default function DashboardPage() {
       <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 pb-20 rounded-b-3xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-green-100 text-sm">Welcome back</p>
+            <p className="text-green-100 text-sm">{isGuest ? 'Demo Mode' : 'Welcome back'}</p>
             <h1 className="text-2xl font-bold">{displayName} 👋</h1>
           </div>
-          <div className="w-12 h-12 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={displayName}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden')
-                }}
-              />
-            ) : null}
-            <svg className={`w-6 h-6 text-white/70 ${profile?.avatar_url ? 'hidden' : ''}`} fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-          </div>
+          {isGuest ? (
+            <Link
+              href="/login"
+              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-full transition-all"
+            >
+              <LogIn className="w-4 h-4" />
+              <span className="font-semibold text-sm">Login</span>
+            </Link>
+          ) : (
+            <Link
+              href="/profile"
+              className="w-12 h-12 rounded-full overflow-hidden bg-white/20 flex items-center justify-center"
+            >
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none'
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                  }}
+                />
+              ) : null}
+              <svg className={`w-6 h-6 text-white/70 ${profile?.avatar_url ? 'hidden' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </Link>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -250,18 +270,45 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Demo Banner for Guest Users */}
+      {isGuest && (
+        <div className="px-6 mt-6">
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">🎾</div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-800 dark:text-white mb-1">Try Demo Mode!</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                  Record a match and create a shareable story card. Your data will not be saved in demo mode.
+                </p>
+                <Link
+                  href="/record"
+                  className="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-all"
+                >
+                  Try it now →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Recent Matches */}
       <div className="px-6 mt-6 pb-24">
-        <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Recent Matches</h2>
+        <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+          {isGuest ? 'Your Matches' : 'Recent Matches'}
+        </h2>
         {matches.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-sm text-center">
             <div className="text-4xl mb-3">🎾</div>
-            <p className="text-gray-500 dark:text-gray-400">No matches yet</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              {isGuest ? 'No demo matches yet' : 'No matches yet'}
+            </p>
             <Link
               href="/record"
               className="text-green-600 dark:text-green-400 font-semibold mt-2 inline-block hover:underline"
             >
-              Record your first match →
+              {isGuest ? 'Try recording a demo match →' : 'Record your first match →'}
             </Link>
           </div>
         ) : (

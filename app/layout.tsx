@@ -38,7 +38,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`h-full ${outfit.variable}`}>
-      <body className="h-full">
+      <body className="h-full font-outfit">
         <div className="max-w-md mx-auto min-h-full">
           {children}
         </div>

@@ -25,31 +25,31 @@ export default function CreateGroupPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
-      <div className="bg-white p-4 border-b border-gray-100 flex items-center gap-4">
-        <Link 
+      <div className="bg-white dark:bg-gray-800 p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-4">
+        <Link
           href="/groups"
-          className="p-2 hover:bg-gray-100 rounded-full"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-800 dark:text-white"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h1 className="text-xl font-bold">Create Group</h1>
+        <h1 className="text-xl font-bold text-gray-800 dark:text-white">Create Group</h1>
       </div>
 
       <div className="p-6 space-y-6">
         {/* Group Icon */}
         <div className="flex justify-center">
-          <button className="w-24 h-24 bg-green-100 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 border-dashed border-green-300 hover:bg-green-200 transition-all">
+          <button className="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 border-dashed border-green-300 dark:border-green-700 hover:bg-green-200 dark:hover:bg-green-900/50 transition-all">
             <span className="text-3xl">🎾</span>
-            <span className="text-xs text-green-600">Change</span>
+            <span className="text-xs text-green-600 dark:text-green-400">Change</span>
           </button>
         </div>
 
         {/* Group Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Group Name</label>
-          <input 
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Group Name</label>
+          <input
             type="text"
             placeholder="Enter group name"
             value={name}
@@ -60,8 +60,8 @@ export default function CreateGroupPage() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Description (optional)</label>
-          <textarea 
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Description (optional)</label>
+          <textarea
             placeholder="Tell us about your group..."
             rows={3}
             value={description}
@@ -72,14 +72,14 @@ export default function CreateGroupPage() {
 
         {/* Privacy */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Privacy</label>
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Privacy</label>
           <div className="grid grid-cols-2 gap-3">
-            <button 
+            <button
               onClick={() => setPrivacy('public')}
               className={`py-4 px-4 font-semibold rounded-xl flex flex-col items-center gap-1 transition-all ${
-                privacy === 'public' 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                privacy === 'public'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               <Globe className="w-5 h-5" />
@@ -88,12 +88,12 @@ export default function CreateGroupPage() {
                 Anyone can join
               </span>
             </button>
-            <button 
+            <button
               onClick={() => setPrivacy('private')}
               className={`py-4 px-4 font-semibold rounded-xl flex flex-col items-center gap-1 transition-all ${
-                privacy === 'private' 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                privacy === 'private'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               <Lock className="w-5 h-5" />
@@ -107,8 +107,8 @@ export default function CreateGroupPage() {
 
         {/* Season Settings */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Ranking Reset</label>
-          <select 
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Ranking Reset</label>
+          <select
             value={rankingReset}
             onChange={(e) => setRankingReset(e.target.value)}
             className="input"
@@ -121,7 +121,7 @@ export default function CreateGroupPage() {
         </div>
 
         {/* Submit */}
-        <button 
+        <button
           onClick={handleSubmit}
           disabled={!name}
           className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"

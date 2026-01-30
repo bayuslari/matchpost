@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, Loader2 } from 'lucide-react'
+import { ArrowLeft, MapPin, Loader2, Plus, Minus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function RecordMatchPage() {
@@ -14,8 +14,14 @@ export default function RecordMatchPage() {
     { player: '', opponent: '' },
     { player: '', opponent: '' },
     { player: '', opponent: '' },
+    { player: '', opponent: '' },
+    { player: '', opponent: '' },
   ])
+  const [visibleSets, setVisibleSets] = useState(3)
+  const MAX_SETS = 5
   const [opponent, setOpponent] = useState('')
+  const [partner, setPartner] = useState('')
+  const [opponent2, setOpponent2] = useState('')
   const [location, setLocation] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -34,7 +40,12 @@ export default function RecordMatchPage() {
       return
     }
 
-    const validSets = sets.filter(s => s.player !== '' && s.opponent !== '')
+    if (matchType === 'doubles' && !partner.trim()) {
+      setError('Please enter your partner name')
+      return
+    }
+
+    const validSets = sets.slice(0, visibleSets).filter(s => s.player !== '' && s.opponent !== '')
     if (validSets.length === 0) {
       setError('Please enter at least one set score')
       return
@@ -47,8 +58,31 @@ export default function RecordMatchPage() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
 
+      // Calculate result based on sets won
+      const playerSetsWon = validSets.filter(s => parseInt(s.player) > parseInt(s.opponent)).length
+      const opponentSetsWon = validSets.filter(s => parseInt(s.opponent) > parseInt(s.player)).length
+      const result = playerSetsWon > opponentSetsWon ? 'win' : playerSetsWon < opponentSetsWon ? 'loss' : 'draw'
+
+      // Demo mode - save to sessionStorage instead of database
       if (!user) {
-        router.push('/login')
+        const demoMatch = {
+          id: 'demo',
+          match_type: matchType,
+          opponent_name: opponent.trim(),
+          partner_name: matchType === 'doubles' ? partner.trim() || null : null,
+          opponent_partner_name: matchType === 'doubles' ? opponent2.trim() || null : null,
+          location: location.trim() || null,
+          played_at: date,
+          result,
+          match_sets: validSets.map((set, index) => ({
+            set_number: index + 1,
+            player_score: parseInt(set.player),
+            opponent_score: parseInt(set.opponent),
+          })),
+        }
+
+        sessionStorage.setItem('demoMatch', JSON.stringify(demoMatch))
+        router.push('/story-card?demo=true')
         return
       }
 
@@ -59,6 +93,8 @@ export default function RecordMatchPage() {
           user_id: user.id,
           match_type: matchType,
           opponent_name: opponent.trim(),
+          partner_name: matchType === 'doubles' ? partner.trim() || null : null,
+          opponent_partner_name: matchType === 'doubles' ? opponent2.trim() || null : null,
           location: location.trim() || null,
           played_at: date,
         })
@@ -100,36 +136,36 @@ export default function RecordMatchPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 pb-8">
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-8">
       {/* Header */}
-      <div className="bg-white p-4 border-b border-gray-100 flex items-center gap-4">
+      <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 flex items-center gap-4">
         <Link
           href="/dashboard"
-          className="p-2 hover:bg-gray-100 rounded-full"
+          className="p-2 hover:bg-white/20 rounded-full text-white"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h1 className="text-xl font-bold">Record Match</h1>
+        <h1 className="text-xl font-bold text-white">Record Match</h1>
       </div>
 
       <div className="p-6 space-y-6">
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm">
+          <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm">
             {error}
           </div>
         )}
 
         {/* Match Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Match Type</label>
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Match Type</label>
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setMatchType('singles')}
               className={`py-3 px-4 font-semibold rounded-xl transition-all ${
                 matchType === 'singles'
                   ? 'bg-green-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               Singles
@@ -139,7 +175,7 @@ export default function RecordMatchPage() {
               className={`py-3 px-4 font-semibold rounded-xl transition-all ${
                 matchType === 'doubles'
                   ? 'bg-green-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               Doubles
@@ -147,9 +183,25 @@ export default function RecordMatchPage() {
           </div>
         </div>
 
+        {/* Partner (Doubles only) */}
+        {matchType === 'doubles' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Your Partner</label>
+            <input
+              type="text"
+              placeholder="Enter your partner's name"
+              value={partner}
+              onChange={(e) => setPartner(e.target.value)}
+              className="input"
+            />
+          </div>
+        )}
+
         {/* Opponent */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Opponent Name</label>
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+            {matchType === 'doubles' ? 'Opponent 1' : 'Opponent Name'}
+          </label>
           <input
             type="text"
             placeholder="Enter opponent name"
@@ -159,13 +211,30 @@ export default function RecordMatchPage() {
           />
         </div>
 
+        {/* Opponent 2 (Doubles only) */}
+        {matchType === 'doubles' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Opponent 2</label>
+            <input
+              type="text"
+              placeholder="Enter second opponent's name"
+              value={opponent2}
+              onChange={(e) => setOpponent2(e.target.value)}
+              className="input"
+            />
+          </div>
+        )}
+
         {/* Score Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Score (per set)</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Score (per set)</label>
+            <span className="text-xs text-gray-400 dark:text-gray-500">Max 5 sets</span>
+          </div>
           <div className="space-y-3">
-            {sets.map((set, index) => (
+            {sets.slice(0, visibleSets).map((set, index) => (
               <div key={index} className="flex items-center gap-3">
-                <span className="text-sm text-gray-500 w-12">Set {index + 1}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 w-12">Set {index + 1}</span>
                 <div className="flex-1 grid grid-cols-2 gap-2">
                   <div className="relative">
                     <input
@@ -173,11 +242,11 @@ export default function RecordMatchPage() {
                       placeholder="0"
                       value={set.player}
                       onChange={(e) => handleSetChange(index, 'player', e.target.value)}
-                      className="w-full p-3 bg-green-50 border border-green-200 rounded-xl text-center font-bold text-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl text-center font-bold text-green-700 dark:text-green-400 focus:outline-none focus:ring-2 focus:ring-green-500"
                       min="0"
                       max="7"
                     />
-                    <span className="absolute -top-2 left-3 text-xs text-green-600 bg-green-50 px-1">You</span>
+                    <span className="absolute -top-2 left-3 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-gray-900 px-1">You</span>
                   </div>
                   <div className="relative">
                     <input
@@ -185,21 +254,51 @@ export default function RecordMatchPage() {
                       placeholder="0"
                       value={set.opponent}
                       onChange={(e) => handleSetChange(index, 'opponent', e.target.value)}
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-center font-bold text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                      className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-center font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
                       min="0"
                       max="7"
                     />
-                    <span className="absolute -top-2 left-3 text-xs text-gray-500 bg-gray-50 px-1">Opp</span>
+                    <span className="absolute -top-2 left-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 px-1">Opp</span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Add/Remove Set Buttons */}
+          <div className="flex gap-2 mt-3">
+            {visibleSets < MAX_SETS && (
+              <button
+                type="button"
+                onClick={() => setVisibleSets(prev => Math.min(prev + 1, MAX_SETS))}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Add Set {visibleSets + 1}
+              </button>
+            )}
+            {visibleSets > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  // Clear the last visible set data when removing
+                  const newSets = [...sets]
+                  newSets[visibleSets - 1] = { player: '', opponent: '' }
+                  setSets(newSets)
+                  setVisibleSets(prev => Math.max(prev - 1, 1))
+                }}
+                className="flex items-center justify-center gap-2 py-2 px-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition-all text-sm font-medium"
+              >
+                <Minus className="w-4 h-4" />
+                Remove
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Location */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Location</label>
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Location</label>
           <div className="relative">
             <input
               type="text"
@@ -214,7 +313,7 @@ export default function RecordMatchPage() {
 
         {/* Date */}
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-2">Date</label>
+          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Date</label>
           <input
             type="date"
             value={date}
@@ -232,10 +331,10 @@ export default function RecordMatchPage() {
           {isSubmitting ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Saving...
+              Creating...
             </>
           ) : (
-            'Save & Create Story Card →'
+            'Create Story Card →'
           )}
         </button>
       </div>

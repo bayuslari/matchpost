@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Trash2, Download, Share2, Loader2, X } from 'lucide-react'
+import { ArrowLeft, Camera, Trash2, Download, Share2, Loader2, X, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Match, MatchSet, Profile } from '@/lib/database.types'
 
@@ -21,6 +21,7 @@ function StoryCardContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const matchId = searchParams.get('matchId')
+  const isDemo = searchParams.get('demo') === 'true'
   const supabase = createClient()
 
   const [selectedTemplate, setSelectedTemplate] = useState('pro')
@@ -36,6 +37,19 @@ function StoryCardContent() {
 
   useEffect(() => {
     async function loadData() {
+      // Demo mode - load from sessionStorage
+      if (isDemo) {
+        const demoData = sessionStorage.getItem('demoMatch')
+        if (demoData) {
+          const demoMatch = JSON.parse(demoData)
+          setMatch(demoMatch as MatchWithSets)
+          // Set demo stats
+          setStats({ winRate: demoMatch.result === 'win' ? 100 : 0, streak: demoMatch.result === 'win' ? 1 : 0 })
+        }
+        setLoading(false)
+        return
+      }
+
       if (!matchId) {
         setLoading(false)
         return
@@ -98,7 +112,7 @@ function StoryCardContent() {
     }
 
     loadData()
-  }, [matchId, supabase])
+  }, [matchId, isDemo, supabase])
 
   // Format score from sets
   const formatScore = () => {
@@ -258,9 +272,11 @@ function StoryCardContent() {
   const isPlayerWinner = playerSetsWon > opponentSetsWon
 
   // Get display name - prefer username for privacy, fallback to full name
-  const displayName = profile?.username
-    ? `@${profile.username}`
-    : profile?.full_name || 'You'
+  const displayName = isDemo
+    ? 'You'
+    : profile?.username
+      ? `@${profile.username}`
+      : profile?.full_name || 'You'
 
   if (loading) {
     return (
@@ -333,16 +349,35 @@ function StoryCardContent() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <h1 className="text-lg font-bold">Create Story Card</h1>
-        <button
-          onClick={() => setShowDeleteModal(true)}
-          className="p-2 hover:bg-gray-800 rounded-full text-red-400"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
+        {isDemo ? (
+          <Link
+            href="/login"
+            className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-full text-sm font-semibold transition-all"
+          >
+            <LogIn className="w-4 h-4" />
+            Login
+          </Link>
+        ) : (
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="p-2 hover:bg-gray-800 rounded-full text-red-400"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
+      {/* Demo Banner */}
+      {isDemo && (
+        <div className="mx-6 mt-4 mb-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-3">
+          <p className="text-yellow-200 text-sm text-center">
+            🎉 Demo Mode - Login to save your matches!
+          </p>
+        </div>
+      )}
+
       {/* Preview */}
-      <div className="px-6 mb-6">
+      <div className={`px-6 mb-6 ${!isDemo ? 'mt-4' : ''}`}>
         <div className="text-gray-400 text-sm mb-2 text-center">Preview</div>
 
         {/* Instagram Story Preview */}
@@ -381,78 +416,166 @@ function StoryCardContent() {
                   </div>
                 </div>
 
-                {/* Player Row - You */}
-                <div className="bg-white px-3 py-2.5 flex items-center gap-2 border-b border-gray-100">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                    {profile?.avatar_url ? (
-                      <img
-                        src={profile.avatar_url}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                          e.currentTarget.nextElementSibling?.classList.remove('hidden')
-                        }}
-                      />
-                    ) : null}
-                    <svg className={`w-5 h-5 text-gray-400 ${profile?.avatar_url ? 'hidden' : ''}`} fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-gray-900 truncate">
-                      {displayName}
+                {/* Player Row(s) - You (and Partner for doubles) */}
+                {match.match_type === 'doubles' ? (
+                  <div className="bg-white px-3 py-2 flex items-center gap-2 border-b border-gray-100">
+                    {/* Players column */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      {/* Player 1 - You */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                          {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                          )}
+                        </div>
+                        <div className="font-semibold text-sm text-gray-900 truncate">{displayName}</div>
+                      </div>
+                      {/* Player 2 - Partner */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                          <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                          </svg>
+                        </div>
+                        <div className="font-semibold text-sm text-gray-900 truncate">{match.partner_name || 'Partner'}</div>
+                      </div>
+                    </div>
+                    {/* Scores column - vertically centered */}
+                    <div className="flex gap-0.5 items-center">
+                      {sortedSets.map((set) => {
+                        const isSetWinner = set.player_score > set.opponent_score
+                        return (
+                          <div
+                            key={set.set_number}
+                            className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
+                              isSetWinner
+                                ? 'bg-[#134D6B] text-white'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {set.player_score}
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
-                  <div className="flex gap-0.5">
-                    {sortedSets.map((set) => {
-                      const isSetWinner = set.player_score > set.opponent_score
-                      return (
-                        <div
-                          key={set.set_number}
-                          className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
-                            isSetWinner
-                              ? 'bg-[#134D6B] text-white'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}
-                        >
-                          {set.player_score}
-                        </div>
-                      )
-                    })}
+                ) : (
+                  <div className="bg-white px-3 py-2.5 flex items-center gap-2 border-b border-gray-100">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                      {profile?.avatar_url ? (
+                        <img
+                          src={profile.avatar_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                          }}
+                        />
+                      ) : null}
+                      <svg className={`w-5 h-5 text-gray-400 ${profile?.avatar_url ? 'hidden' : ''}`} fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-gray-900 truncate">{displayName}</div>
+                    </div>
+                    <div className="flex gap-0.5">
+                      {sortedSets.map((set) => {
+                        const isSetWinner = set.player_score > set.opponent_score
+                        return (
+                          <div
+                            key={set.set_number}
+                            className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
+                              isSetWinner
+                                ? 'bg-[#134D6B] text-white'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {set.player_score}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Opponent Row */}
-                <div className="bg-white px-3 py-2.5 flex items-center gap-2 rounded-b-xl">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm text-gray-900 truncate">
-                      {match.opponent_name}
+                {/* Opponent Row(s) */}
+                {match.match_type === 'doubles' ? (
+                  <div className="bg-white px-3 py-2 flex items-center gap-2 rounded-b-xl">
+                    {/* Opponents column */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      {/* Opponent 1 */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                          <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                          </svg>
+                        </div>
+                        <div className="font-semibold text-sm text-gray-900 truncate">{match.opponent_name}</div>
+                      </div>
+                      {/* Opponent 2 */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                          <svg className="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                          </svg>
+                        </div>
+                        <div className="font-semibold text-sm text-gray-900 truncate">{match.opponent_partner_name || 'Partner'}</div>
+                      </div>
+                    </div>
+                    {/* Scores column - vertically centered */}
+                    <div className="flex gap-0.5 items-center">
+                      {sortedSets.map((set) => {
+                        const isSetWinner = set.opponent_score > set.player_score
+                        return (
+                          <div
+                            key={set.set_number}
+                            className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
+                              isSetWinner
+                                ? 'bg-[#134D6B] text-white'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {set.opponent_score}
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
-                  <div className="flex gap-0.5">
-                    {sortedSets.map((set) => {
-                      const isSetWinner = set.opponent_score > set.player_score
-                      return (
-                        <div
-                          key={set.set_number}
-                          className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
-                            isSetWinner
-                              ? 'bg-[#134D6B] text-white'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}
-                        >
-                          {set.opponent_score}
-                        </div>
-                      )
-                    })}
+                ) : (
+                  <div className="bg-white px-3 py-2.5 flex items-center gap-2 rounded-b-xl">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-gray-900 truncate">{match.opponent_name}</div>
+                    </div>
+                    <div className="flex gap-0.5">
+                      {sortedSets.map((set) => {
+                        const isSetWinner = set.opponent_score > set.player_score
+                        return (
+                          <div
+                            key={set.set_number}
+                            className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded-sm ${
+                              isSetWinner
+                                ? 'bg-[#134D6B] text-white'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {set.opponent_score}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Match Info Footer */}
                 <div className="bg-[#134D6B]/90 backdrop-blur-sm rounded-xl mt-2 px-3 py-2 flex justify-between items-center">
