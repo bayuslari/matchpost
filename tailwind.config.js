@@ -23,6 +23,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        outfit: ['var(--font-outfit)', 'sans-serif'],
       },
     },
   },

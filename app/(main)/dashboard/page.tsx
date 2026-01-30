@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Users } from 'lucide-react'
+import { Plus, Users, Trash2, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
 
@@ -12,6 +12,8 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [matches, setMatches] = useState<MatchWithSets[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteMatchId, setDeleteMatchId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -88,6 +90,33 @@ export default function DashboardPage() {
 
   const displayName = profile?.full_name || profile?.username || 'Player'
 
+  const handleDelete = async () => {
+    if (!deleteMatchId) return
+
+    setIsDeleting(true)
+    try {
+      // Delete match sets first (due to foreign key)
+      await supabase
+        .from('match_sets')
+        .delete()
+        .eq('match_id', deleteMatchId)
+
+      // Delete the match
+      const { error } = await supabase
+        .from('matches')
+        .delete()
+        .eq('id', deleteMatchId)
+
+      if (!error) {
+        setMatches(matches.filter(m => m.id !== deleteMatchId))
+      }
+    } catch (err) {
+      console.error('Delete failed:', err)
+    }
+    setIsDeleting(false)
+    setDeleteMatchId(null)
+  }
+
   if (loading) {
     return (
       <div className="min-h-dvh bg-gray-50 flex items-center justify-center">
@@ -98,6 +127,46 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-dvh bg-gray-50">
+      {/* Delete Confirmation Modal */}
+      {deleteMatchId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Delete Match?</h3>
+              <p className="text-gray-500 text-sm">
+                This will permanently delete this match and all its data.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteMatchId(null)}
+                disabled={isDeleting}
+                className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 py-3 px-4 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 pb-20 rounded-b-3xl">
         <div className="flex items-center justify-between mb-6">
@@ -176,25 +245,35 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-3">
             {matches.map((match) => (
-              <Link
+              <div
                 key={match.id}
-                href={`/story-card?matchId=${match.id}`}
                 className="bg-white rounded-xl p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-all"
               >
-                <div className="flex items-center gap-3">
+                <Link
+                  href={`/story-card?matchId=${match.id}`}
+                  className="flex items-center gap-3 flex-1"
+                >
                   <div className={`w-2 h-12 rounded-full ${match.result === 'win' ? 'bg-green-500' : 'bg-red-400'}`}></div>
                   <div>
                     <div className="font-semibold text-gray-800">vs {match.opponent_name}</div>
                     <div className="text-sm text-gray-500">{formatDate(match.played_at)}</div>
                   </div>
+                </Link>
+                <div className="flex items-center gap-3">
+                  <Link href={`/story-card?matchId=${match.id}`} className="text-right">
+                    <div className={`font-bold ${match.result === 'win' ? 'text-green-600' : 'text-red-500'}`}>
+                      {match.result === 'win' ? 'WIN' : match.result === 'loss' ? 'LOSS' : 'DRAW'}
+                    </div>
+                    <div className="text-sm text-gray-500">{formatScore(match.match_sets)}</div>
+                  </Link>
+                  <button
+                    onClick={() => setDeleteMatchId(match.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <div className="text-right">
-                  <div className={`font-bold ${match.result === 'win' ? 'text-green-600' : 'text-red-500'}`}>
-                    {match.result === 'win' ? 'WIN' : match.result === 'loss' ? 'LOSS' : 'DRAW'}
-                  </div>
-                  <div className="text-sm text-gray-500">{formatScore(match.match_sets)}</div>
-                </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
