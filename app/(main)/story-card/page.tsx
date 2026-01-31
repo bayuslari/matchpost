@@ -26,6 +26,7 @@ function StoryCardContent() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
   const [match, setMatch] = useState<MatchWithSets | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [creatorProfile, setCreatorProfile] = useState<Profile | null>(null)
   const [stats, setStats] = useState({ winRate: 0, streak: 0 })
   const [loading, setLoading] = useState(true)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -83,11 +84,15 @@ function StoryCardContent() {
         .single()
 
       if (matchData) {
-        // Fetch linked profiles if any
+        const userIsOwner = matchData.user_id === user.id
+        setIsOwner(userIsOwner)
+
+        // Fetch linked profiles if any (include creator for shared matches)
         const profileIds = [
           matchData.opponent_user_id,
           matchData.partner_user_id,
           matchData.opponent_partner_user_id,
+          !userIsOwner ? matchData.user_id : null, // Fetch creator profile for shared matches
         ].filter((id): id is string => id !== null && id !== undefined)
 
         let linkedProfiles: Profile[] = []
@@ -100,14 +105,55 @@ function StoryCardContent() {
           linkedProfiles = profiles || []
         }
 
-        const matchWithProfiles: MatchWithSets = {
-          ...matchData,
-          opponent_profile: linkedProfiles.find(p => p.id === matchData.opponent_user_id) || null,
-          partner_profile: linkedProfiles.find(p => p.id === matchData.partner_user_id) || null,
-          opponent_partner_profile: linkedProfiles.find(p => p.id === matchData.opponent_partner_user_id) || null,
+        const creatorProf = linkedProfiles.find(p => p.id === matchData.user_id) || null
+        setCreatorProfile(creatorProf)
+
+        if (userIsOwner) {
+          // Owner view: show match as-is
+          const matchWithProfiles: MatchWithSets = {
+            ...matchData,
+            opponent_profile: linkedProfiles.find(p => p.id === matchData.opponent_user_id) || null,
+            partner_profile: linkedProfiles.find(p => p.id === matchData.partner_user_id) || null,
+            opponent_partner_profile: linkedProfiles.find(p => p.id === matchData.opponent_partner_user_id) || null,
+          }
+          setMatch(matchWithProfiles)
+        } else {
+          // Shared view: flip perspective so current user sees themselves as player
+          // Determine the role of current user
+          const isOpponent = matchData.opponent_user_id === user.id
+          const isPartner = matchData.partner_user_id === user.id
+          const isOpponentPartner = matchData.opponent_partner_user_id === user.id
+
+          // Invert result for opponent's perspective
+          let invertedResult = matchData.result
+          if (isOpponent || isOpponentPartner) {
+            // Current user was on the opponent side, so invert win/loss
+            if (matchData.result === 'win') invertedResult = 'loss'
+            else if (matchData.result === 'loss') invertedResult = 'win'
+          }
+          // If current user is partner, result stays the same (they're on creator's team)
+
+          // Swap scores for opponent perspective
+          const transformedSets = matchData.match_sets.map(set => ({
+            ...set,
+            player_score: (isOpponent || isOpponentPartner) ? set.opponent_score : set.player_score,
+            opponent_score: (isOpponent || isOpponentPartner) ? set.player_score : set.opponent_score,
+          }))
+
+          // Build transformed match with swapped perspectives
+          const matchWithProfiles: MatchWithSets = {
+            ...matchData,
+            match_sets: transformedSets,
+            result: invertedResult,
+            // For opponent view: creator becomes the opponent
+            opponent_name: creatorProf?.full_name || creatorProf?.username || matchData.opponent_name,
+            opponent_profile: (isOpponent || isOpponentPartner) ? creatorProf : linkedProfiles.find(p => p.id === matchData.opponent_user_id) || null,
+            // Partner stays same if user is partner, otherwise swap
+            partner_profile: isPartner ? linkedProfiles.find(p => p.id === matchData.partner_user_id) || null : null,
+            opponent_partner_profile: linkedProfiles.find(p => p.id === matchData.opponent_partner_user_id) || null,
+          }
+          setMatch(matchWithProfiles)
         }
-        setMatch(matchWithProfiles)
-        setIsOwner(matchData.user_id === user.id)
       }
 
       // Fetch all matches for stats
