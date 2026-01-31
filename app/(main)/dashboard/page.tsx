@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -10,12 +10,87 @@ import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
 import type { MatchSet } from '@/lib/database.types'
 
+// Format score from sets (with optional flip for viewer's perspective)
+function formatScore(matchSets: MatchSet[], flipScore: boolean = false) {
+  if (!matchSets || matchSets.length === 0) return '-'
+  return matchSets
+    .sort((a, b) => a.set_number - b.set_number)
+    .map(s => flipScore
+      ? `${s.opponent_score}-${s.player_score}`
+      : `${s.player_score}-${s.opponent_score}`)
+    .join(', ')
+}
+
+// Format date - moved outside to avoid recreation
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+}
+
+// Skeleton component to prevent CLS during loading
+function DashboardSkeleton() {
+  return (
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
+      {/* Header Skeleton */}
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-20 rounded-b-3xl">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-4 w-20 bg-yellow-600/30 rounded animate-pulse mb-2"></div>
+            <div className="h-8 w-32 bg-yellow-600/30 rounded animate-pulse"></div>
+          </div>
+          <div className="w-12 h-12 rounded-full bg-white/20 animate-pulse"></div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
+              <div className="h-9 w-12 bg-yellow-600/30 rounded mx-auto animate-pulse mb-1"></div>
+              <div className="h-3 w-14 bg-yellow-600/30 rounded mx-auto animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="px-6 -mt-10">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
+          <div className="flex items-center justify-center gap-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-xl p-4">
+            <div className="w-12 h-12 bg-yellow-200 dark:bg-yellow-700 rounded-full animate-pulse"></div>
+            <div className="h-6 w-24 bg-yellow-200 dark:bg-yellow-700 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+      <div className="px-6 mt-6 pb-24">
+        <div className="h-6 w-36 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-4"></div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm flex items-center gap-3">
+              <div className="w-1.5 h-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+              <div className="flex-1">
+                <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2"></div>
+                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              </div>
+              <div className="text-right">
+                <div className="h-5 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1"></div>
+                <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function DashboardContent() {
   const { profile, matches, stats, isGuest, isLoading, initialize, removeMatch, refreshMatches } = useUserStore()
   const [deleteMatchId, setDeleteMatchId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [displayLimit, setDisplayLimit] = useState(10)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -32,46 +107,26 @@ function DashboardContent() {
     }
   }, [searchParams, refreshMatches, router])
 
-  // Check if viewer is on opponent side for a shared match
-  const isViewerOnOpponentSide = (match: typeof matches[0]) => {
-    if (match.isOwner || !profile?.id) return false
-    return match.opponent_user_id === profile.id || match.opponent_partner_user_id === profile.id
-  }
+  // Pre-compute match display data to avoid inline calculations
+  const matchDisplayData = useMemo(() => {
+    return matches.slice(0, displayLimit).map(match => {
+      const onOpponentSide = !match.isOwner && profile?.id &&
+        (match.opponent_user_id === profile.id || match.opponent_partner_user_id === profile.id)
+      const viewerResult = match.isOwner ? match.result :
+        onOpponentSide ? (match.result === 'win' ? 'loss' : match.result === 'loss' ? 'win' : match.result) : match.result
 
-  // Get result from viewer's perspective
-  const getViewerResult = (match: typeof matches[0]) => {
-    if (match.isOwner) return match.result
-    // For shared matches, check if viewer is on opponent side
-    if (isViewerOnOpponentSide(match)) {
-      // Flip the result
-      if (match.result === 'win') return 'loss'
-      if (match.result === 'loss') return 'win'
-    }
-    return match.result
-  }
-
-  // Format score from sets (with optional flip for viewer's perspective)
-  const formatScore = (matchSets: MatchSet[], flipScore: boolean = false) => {
-    if (!matchSets || matchSets.length === 0) return '-'
-    return matchSets
-      .sort((a, b) => a.set_number - b.set_number)
-      .map(s => flipScore
-        ? `${s.opponent_score}-${s.player_score}`
-        : `${s.player_score}-${s.opponent_score}`)
-      .join(', ')
-  }
-
-  // Format date
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const now = new Date()
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-
-    if (diffDays === 0) return 'Today'
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays} days ago`
-    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-  }
+      return {
+        ...match,
+        onOpponentSide,
+        viewerResult,
+        formattedDate: formatDate(match.played_at),
+        formattedScore: formatScore(match.match_sets, !!onOpponentSide),
+        resultBarColor: viewerResult === 'win' ? 'bg-yellow-500' : viewerResult === 'loss' ? 'bg-red-400' : 'bg-gray-400',
+        resultTextColor: viewerResult === 'win' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-500 dark:text-red-400',
+        resultText: viewerResult === 'win' ? 'WIN' : viewerResult === 'loss' ? 'LOSS' : 'DRAW',
+      }
+    })
+  }, [matches, displayLimit, profile?.id])
 
   const displayName = isGuest ? 'Guest' : (profile?.full_name || profile?.username || 'Player')
 
@@ -109,23 +164,7 @@ function DashboardContent() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-6">
-        {/* Animated Logo */}
-        <div className="text-4xl font-outfit font-black tracking-tight">
-          <span className="text-yellow-500 animate-pulse">MATCH</span>
-          <span className="text-gray-800 dark:text-white">POST</span>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-48 space-y-2">
-          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
-          </div>
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
-        </div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   return (
@@ -306,7 +345,7 @@ function DashboardContent() {
           </div>
         ) : (
           <div className="space-y-3">
-            {matches.slice(0, displayLimit).map((match) => (
+            {matchDisplayData.map((match) => (
               <div
                 key={match.id}
                 className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-all"
@@ -315,12 +354,7 @@ function DashboardContent() {
                   href={`/story-card?matchId=${match.id}`}
                   className="flex items-center gap-3 flex-1 min-w-0"
                 >
-                  <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${
-                    (() => {
-                      const viewerResult = getViewerResult(match)
-                      return viewerResult === 'win' ? 'bg-yellow-500' : viewerResult === 'loss' ? 'bg-red-400' : 'bg-gray-400'
-                    })()
-                  }`}></div>
+                  <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${match.resultBarColor}`}></div>
                   <div className="min-w-0 flex-1">
                     {match.isOwner ? (
                       // Owner view: show opponent names
@@ -336,7 +370,7 @@ function DashboardContent() {
                       )
                     ) : (
                       // Shared view: show opponents from viewer's perspective
-                      isViewerOnOpponentSide(match) ? (
+                      match.onOpponentSide ? (
                         // Viewer is on opponent side - show creator's team as their opponent
                         match.match_type === 'doubles' ? (
                           <div className="font-semibold text-gray-800 dark:text-white">
@@ -372,7 +406,7 @@ function DashboardContent() {
                       </div>
                     )}
                     <div className="flex items-center gap-2 flex-wrap mt-1">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(match.played_at)}</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{match.formattedDate}</span>
                       {match.match_type === 'doubles' && (
                         <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
                           2v2
@@ -386,18 +420,10 @@ function DashboardContent() {
                 </Link>
                 <div className="flex items-center gap-3">
                   <Link href={`/story-card?matchId=${match.id}`} className="text-right">
-                    {(() => {
-                      const viewerResult = getViewerResult(match)
-                      const shouldFlipScore = isViewerOnOpponentSide(match)
-                      return (
-                        <>
-                          <div className={`font-bold ${viewerResult === 'win' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-500 dark:text-red-400'}`}>
-                            {viewerResult === 'win' ? 'WIN' : viewerResult === 'loss' ? 'LOSS' : 'DRAW'}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{formatScore(match.match_sets, shouldFlipScore)}</div>
-                        </>
-                      )
-                    })()}
+                    <div className={`font-bold ${match.resultTextColor}`}>
+                      {match.resultText}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{match.formattedScore}</div>
                   </Link>
                   {match.isOwner && (
                     <button
@@ -429,20 +455,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-6">
-        <div className="text-4xl font-outfit font-black tracking-tight">
-          <span className="text-yellow-500 animate-pulse">MATCH</span>
-          <span className="text-gray-800 dark:text-white">POST</span>
-        </div>
-        <div className="w-48 space-y-2">
-          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
-          </div>
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<DashboardSkeleton />}>
       <DashboardContent />
     </Suspense>
   )

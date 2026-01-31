@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -32,7 +32,7 @@ const settingsItems = [
 
 export default function ProfilePage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const { profile, stats, isLoading, initialize, reset } = useUserStore()
 
   useEffect(() => {
@@ -51,19 +51,45 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-6">
-        {/* Animated Logo */}
-        <div className="text-4xl font-outfit font-black tracking-tight">
-          <span className="text-yellow-500 animate-pulse">MATCH</span>
-          <span className="text-gray-800 dark:text-white">POST</span>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-48 space-y-2">
-          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
+        {/* Header Skeleton */}
+        <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-24 rounded-b-3xl">
+          <div className="h-7 w-16 bg-yellow-600/30 rounded animate-pulse mb-6"></div>
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 rounded-full bg-white/20 animate-pulse"></div>
+            <div className="flex-1">
+              <div className="h-8 w-32 bg-yellow-600/30 rounded animate-pulse mb-2"></div>
+              <div className="h-5 w-24 bg-yellow-600/30 rounded animate-pulse"></div>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-white/20 animate-pulse"></div>
           </div>
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+        </div>
+        {/* Stats Card Skeleton */}
+        <div className="px-6 -mt-12">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+            <div className="grid grid-cols-4 gap-4 text-center">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i}>
+                  <div className="h-8 w-10 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse mb-1"></div>
+                  <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Menu Skeleton */}
+        <div className="px-6 mt-6 space-y-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                </div>
+                <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )

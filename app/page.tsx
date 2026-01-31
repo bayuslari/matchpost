@@ -3,7 +3,7 @@ import Image from 'next/image'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-dvh h-dvh overflow-auto relative flex flex-col items-center justify-center p-6 text-white">
+    <div className="min-h-dvh h-dvh overflow-auto relative flex flex-col items-center justify-center p-6 text-white bg-gray-900">
       {/* Background Image */}
       <Image
         src="/login-bg-compressed.jpg"
@@ -11,6 +11,7 @@ export default function LandingPage() {
         fill
         className="object-cover"
         priority
+        placeholder="empty"
       />
       {/* Dark overlay for better text readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
