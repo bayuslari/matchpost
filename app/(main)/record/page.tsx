@@ -333,7 +333,7 @@ function RecordMatchContent() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 p-4 flex items-center gap-4">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 px-4 pb-4 flex items-center gap-4 header-safe-area">
         <Link
           href={isEditMode ? `/story-card?matchId=${matchId}` : "/dashboard"}
           className="p-2 hover:bg-black/10 rounded-full text-gray-900"

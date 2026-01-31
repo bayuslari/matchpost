@@ -232,7 +232,7 @@ export default function EditProfilePage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-4">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 px-4 pb-4 header-safe-area">
         <div className="flex items-center gap-4">
           <Link
             href="/profile"

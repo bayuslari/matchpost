@@ -41,7 +41,7 @@ export default function StatsPage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-8">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 px-6 pb-8 header-safe-area">
         <div className="flex items-center gap-4 mb-2">
           <Link href="/dashboard" className="p-1 hover:bg-white/20 rounded-full">
             <ArrowLeft className="w-5 h-5" />

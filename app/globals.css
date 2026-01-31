@@ -101,6 +101,11 @@
   padding-right: env(safe-area-inset-right);
 }
 
+/* Header that extends under status bar (for black-translucent) */
+.header-safe-area {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+}
+
 /* Loading bar animation */
 @keyframes loading-bar {
   0% {

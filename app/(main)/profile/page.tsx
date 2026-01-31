@@ -53,7 +53,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
         {/* Header Skeleton */}
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-24 rounded-b-3xl">
+        <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 px-6 pb-24 rounded-b-3xl header-safe-area">
           <div className="h-7 w-16 bg-yellow-600/30 rounded animate-pulse mb-6"></div>
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-white/20 animate-pulse"></div>
@@ -98,7 +98,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-24 rounded-b-3xl">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 px-6 pb-24 rounded-b-3xl header-safe-area">
         <h1 className="text-xl font-bold mb-6">Profile</h1>
 
         {/* Profile Info */}

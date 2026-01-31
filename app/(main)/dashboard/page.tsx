@@ -38,7 +38,7 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
       {/* Header Skeleton */}
-      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-20 rounded-b-3xl">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 px-6 pb-20 rounded-b-3xl header-safe-area">
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="h-4 w-20 bg-yellow-600/30 rounded animate-pulse mb-2"></div>
@@ -210,7 +210,7 @@ function DashboardContent() {
       )}
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-20 rounded-b-3xl">
+      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 px-6 pb-20 rounded-b-3xl header-safe-area">
         <div className="flex items-center justify-between mb-6">
           <div>
             <p className="text-yellow-800 text-sm">{isGuest ? 'Demo Mode' : 'Welcome back'}</p>

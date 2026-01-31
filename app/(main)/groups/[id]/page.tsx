@@ -30,7 +30,7 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header with Cover */}
-      <div className="bg-gradient-to-br from-yellow-500 to-yellow-400 text-gray-900 p-6 pb-20">
+      <div className="bg-gradient-to-br from-yellow-500 to-yellow-400 text-gray-900 px-6 pb-20 header-safe-area">
         <div className="flex items-center justify-between mb-4">
           <Link
             href="/groups"
