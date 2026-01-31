@@ -368,7 +368,7 @@ function DashboardContent() {
                     )}
                     {!match.isOwner && (
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'} recorded this match
+                        Shared by {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'}
                       </div>
                     )}
                     <div className="flex items-center gap-2 flex-wrap mt-1">
