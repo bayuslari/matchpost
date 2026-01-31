@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Plus, Trash2, Loader2, LogIn, User, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, UserCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
@@ -366,12 +366,13 @@ function DashboardContent() {
                         )
                       )
                     )}
+                    {!match.isOwner && (
+                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <UserCircle className="w-3 h-3" />
+                        <span>{match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'} recorded this match</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 flex-wrap">
-                      {!match.isOwner && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'} recorded
-                        </span>
-                      )}
                       <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(match.played_at)}</span>
                       {match.match_type === 'doubles' && (
                         <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
