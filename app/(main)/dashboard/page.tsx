@@ -3,20 +3,32 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useUserStore } from '@/lib/stores/user-store'
 import type { MatchSet } from '@/lib/database.types'
 
 export default function DashboardPage() {
-  const { profile, matches, stats, isGuest, isLoading, initialize, removeMatch } = useUserStore()
+  const { profile, matches, stats, isGuest, isLoading, initialize, removeMatch, refreshMatches } = useUserStore()
   const [deleteMatchId, setDeleteMatchId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const router = useRouter()
 
   useEffect(() => {
     initialize()
   }, [initialize])
+
+  // Refresh matches when coming from story-card page
+  useEffect(() => {
+    if (searchParams.get('refresh') === 'true') {
+      refreshMatches()
+      // Remove the refresh param from URL
+      router.replace('/dashboard', { scroll: false })
+    }
+  }, [searchParams, refreshMatches, router])
 
   // Format score from sets
   const formatScore = (matchSets: MatchSet[]) => {
@@ -252,16 +264,23 @@ export default function DashboardPage() {
               >
                 <Link
                   href={`/story-card?matchId=${match.id}`}
-                  className="flex items-center gap-3 flex-1"
+                  className="flex items-center gap-3 flex-1 min-w-0"
                 >
-                  <div className={`w-2 h-12 rounded-full ${match.result === 'win' ? 'bg-yellow-500' : 'bg-red-400'}`}></div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-800 dark:text-white">
-                        vs {match.opponent_name}{match.match_type === 'doubles' && ` & ${match.opponent_partner_name || 'Partner'}`}
-                      </span>
+                  <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${match.result === 'win' ? 'bg-yellow-500' : 'bg-red-400'}`}></div>
+                  <div className="min-w-0">
+                    <div className="flex items-start gap-2">
+                      {match.match_type === 'doubles' ? (
+                        <div className="font-semibold text-gray-800 dark:text-white">
+                          <div className="truncate">vs {match.opponent_name}</div>
+                          <div className="truncate">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{match.opponent_partner_name || 'Partner'}</div>
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-gray-800 dark:text-white truncate">
+                          vs {match.opponent_name}
+                        </span>
+                      )}
                       {match.match_type === 'doubles' && (
-                        <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
                           2v2
                         </span>
                       )}

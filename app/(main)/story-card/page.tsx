@@ -604,7 +604,7 @@ function StoryCardContent() {
           Save to Gallery
         </button>
         <button
-          onClick={() => router.push('/dashboard')}
+          onClick={() => router.push('/dashboard?refresh=true')}
           className="w-full text-gray-500 dark:text-gray-400 font-medium py-3 hover:text-gray-700 dark:hover:text-white transition-all"
         >
           Skip for now →
