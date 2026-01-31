@@ -123,36 +123,75 @@ function StoryCardContent() {
           const isOpponent = matchData.opponent_user_id === user.id
           const isPartner = matchData.partner_user_id === user.id
           const isOpponentPartner = matchData.opponent_partner_user_id === user.id
+          const isOnOpponentSide = isOpponent || isOpponentPartner
 
-          // Invert result for opponent's perspective
-          let invertedResult = matchData.result
-          if (isOpponent || isOpponentPartner) {
-            // Current user was on the opponent side, so invert win/loss
+          // Get all linked profiles
+          const creatorPartnerProfile = linkedProfiles.find(p => p.id === matchData.partner_user_id) || null
+          const opponentProfile = linkedProfiles.find(p => p.id === matchData.opponent_user_id) || null
+          const opponentPartnerProfile = linkedProfiles.find(p => p.id === matchData.opponent_partner_user_id) || null
+
+          if (isPartner) {
+            // Partner view: same team as creator, keep perspective but show partner's view
+            const matchWithProfiles: MatchWithSets = {
+              ...matchData,
+              opponent_profile: opponentProfile,
+              partner_profile: creatorProf, // Creator is now their partner
+              opponent_partner_profile: opponentPartnerProfile,
+              // Swap partner_name to show creator as partner
+              partner_name: creatorProf?.full_name || creatorProf?.username || 'Partner',
+            }
+            setMatch(matchWithProfiles)
+          } else if (isOnOpponentSide) {
+            // Opponent side view: flip entire perspective
+            // Invert result
+            let invertedResult = matchData.result
             if (matchData.result === 'win') invertedResult = 'loss'
             else if (matchData.result === 'loss') invertedResult = 'win'
-          }
-          // If current user is partner, result stays the same (they're on creator's team)
 
-          // Swap scores for opponent perspective
-          const transformedSets = matchData.match_sets.map(set => ({
-            ...set,
-            player_score: (isOpponent || isOpponentPartner) ? set.opponent_score : set.player_score,
-            opponent_score: (isOpponent || isOpponentPartner) ? set.player_score : set.opponent_score,
-          }))
+            // Swap scores
+            const transformedSets = matchData.match_sets.map(set => ({
+              ...set,
+              player_score: set.opponent_score,
+              opponent_score: set.player_score,
+            }))
 
-          // Build transformed match with swapped perspectives
-          const matchWithProfiles: MatchWithSets = {
-            ...matchData,
-            match_sets: transformedSets,
-            result: invertedResult,
-            // For opponent view: creator becomes the opponent
-            opponent_name: creatorProf?.full_name || creatorProf?.username || matchData.opponent_name,
-            opponent_profile: (isOpponent || isOpponentPartner) ? creatorProf : linkedProfiles.find(p => p.id === matchData.opponent_user_id) || null,
-            // Partner stays same if user is partner, otherwise swap
-            partner_profile: isPartner ? linkedProfiles.find(p => p.id === matchData.partner_user_id) || null : null,
-            opponent_partner_profile: linkedProfiles.find(p => p.id === matchData.opponent_partner_user_id) || null,
+            // For doubles: find viewer's teammate
+            let teammateProfile: Profile | null = null
+            let teammateName: string | null = null
+            if (isOpponent) {
+              // Viewer is opponent, their teammate is opponent_partner
+              teammateProfile = opponentPartnerProfile
+              teammateName = matchData.opponent_partner_name
+            } else {
+              // Viewer is opponent_partner, their teammate is opponent
+              teammateProfile = opponentProfile
+              teammateName = matchData.opponent_name
+            }
+
+            const matchWithProfiles: MatchWithSets = {
+              ...matchData,
+              match_sets: transformedSets,
+              result: invertedResult,
+              // Opponent side (creator's team) - now shown as "opponent" from viewer's perspective
+              opponent_name: creatorProf?.full_name || creatorProf?.username || 'Opponent',
+              opponent_profile: creatorProf,
+              opponent_partner_name: creatorPartnerProfile?.full_name || creatorPartnerProfile?.username || matchData.partner_name || 'Partner',
+              opponent_partner_profile: creatorPartnerProfile,
+              // Player side (viewer's team) - viewer's teammate becomes their partner
+              partner_name: teammateName,
+              partner_profile: teammateProfile,
+            }
+            setMatch(matchWithProfiles)
+          } else {
+            // Fallback: show as-is
+            const matchWithProfiles: MatchWithSets = {
+              ...matchData,
+              opponent_profile: opponentProfile,
+              partner_profile: creatorPartnerProfile,
+              opponent_partner_profile: opponentPartnerProfile,
+            }
+            setMatch(matchWithProfiles)
           }
-          setMatch(matchWithProfiles)
         }
       }
 
