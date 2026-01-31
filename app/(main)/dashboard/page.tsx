@@ -295,21 +295,39 @@ function DashboardContent() {
                   href={`/story-card?matchId=${match.id}`}
                   className="flex items-center gap-3 flex-1 min-w-0"
                 >
-                  <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${match.result === 'win' ? 'bg-yellow-500' : 'bg-red-400'}`}></div>
+                  <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${match.isOwner ? (match.result === 'win' ? 'bg-yellow-500' : 'bg-red-400') : 'bg-blue-400'}`}></div>
                   <div className="min-w-0 flex-1">
-                    {match.match_type === 'doubles' ? (
+                    {match.isOwner ? (
+                      // Owner view: show opponent names
+                      match.match_type === 'doubles' ? (
+                        <div className="font-semibold text-gray-800 dark:text-white">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate">{match.opponent_name}</span>
+                            <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                              2v2
+                            </span>
+                          </div>
+                          <div className="truncate">{match.opponent_partner_name || 'Partner'}</div>
+                        </div>
+                      ) : (
+                        <div className="font-semibold text-gray-800 dark:text-white truncate">
+                          {match.opponent_name}
+                        </div>
+                      )
+                    ) : (
+                      // Shared view: show creator's name (who recorded the match)
                       <div className="font-semibold text-gray-800 dark:text-white">
                         <div className="flex items-center gap-2">
-                          <span className="truncate">{match.opponent_name}</span>
-                          <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
-                            2v2
+                          <span className="truncate">
+                            {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
                           </span>
+                          {match.match_type === 'doubles' && (
+                            <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                              2v2
+                            </span>
+                          )}
                         </div>
-                        <div className="truncate">{match.opponent_partner_name || 'Partner'}</div>
-                      </div>
-                    ) : (
-                      <div className="font-semibold text-gray-800 dark:text-white truncate">
-                        {match.opponent_name}
+                        <div className="text-xs text-gray-500 dark:text-gray-400">recorded this match</div>
                       </div>
                     )}
                     <div className="flex items-center gap-2">
