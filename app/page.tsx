@@ -44,7 +44,7 @@ export default function LandingPage() {
       </div>
 
       {/* Footer */}
-      <div className="relative z-10 pb-6">
+      <div className="relative z-10 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
         <p className="text-white/70 text-[10px] font-outfit uppercase tracking-widest">
           Cooked by{' '}
           <a
@@ -57,6 +57,9 @@ export default function LandingPage() {
           </a>
         </p>
       </div>
+
+      {/* Bottom safe area cover for iOS */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900 z-0" style={{ height: 'env(safe-area-inset-bottom, 0px)' }} />
     </div>
   )
 }
