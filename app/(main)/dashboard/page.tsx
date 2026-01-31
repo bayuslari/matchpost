@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Share2 } from 'lucide-react'
+import { Plus, Trash2, Loader2, LogIn, User, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
@@ -336,50 +336,46 @@ function DashboardContent() {
                       )
                     ) : (
                       // Shared view: show opponents from viewer's perspective
-                      <div className="font-semibold text-gray-800 dark:text-white">
-                        {isViewerOnOpponentSide(match) ? (
-                          // Viewer is on opponent side - show creator's team as their opponent
-                          match.match_type === 'doubles' ? (
-                            <>
-                              <div className="truncate">
-                                {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
-                              </div>
-                              <div className="truncate">
-                                {match.partner_name || 'Partner'}
-                              </div>
-                            </>
-                          ) : (
+                      isViewerOnOpponentSide(match) ? (
+                        // Viewer is on opponent side - show creator's team as their opponent
+                        match.match_type === 'doubles' ? (
+                          <div className="font-semibold text-gray-800 dark:text-white">
                             <div className="truncate">
                               {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
                             </div>
-                          )
+                            <div className="truncate">
+                              {match.partner_name || 'Partner'}
+                            </div>
+                          </div>
                         ) : (
-                          // Viewer is on partner side - show original opponents
-                          match.match_type === 'doubles' ? (
-                            <>
-                              <div className="truncate">{match.opponent_name}</div>
-                              <div className="truncate">{match.opponent_partner_name || 'Partner'}</div>
-                            </>
-                          ) : (
+                          <div className="font-semibold text-gray-800 dark:text-white truncate">
+                            {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
+                          </div>
+                        )
+                      ) : (
+                        // Viewer is on partner side - show original opponents
+                        match.match_type === 'doubles' ? (
+                          <div className="font-semibold text-gray-800 dark:text-white">
                             <div className="truncate">{match.opponent_name}</div>
-                          )
-                        )}
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'} recorded this match
-                        </div>
-                      </div>
+                            <div className="truncate">{match.opponent_partner_name || 'Partner'}</div>
+                          </div>
+                        ) : (
+                          <div className="font-semibold text-gray-800 dark:text-white truncate">
+                            {match.opponent_name}
+                          </div>
+                        )
+                      )
                     )}
                     <div className="flex items-center gap-2 flex-wrap">
+                      {!match.isOwner && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'} recorded
+                        </span>
+                      )}
                       <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(match.played_at)}</span>
                       {match.match_type === 'doubles' && (
                         <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
                           2v2
-                        </span>
-                      )}
-                      {!match.isOwner && (
-                        <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1">
-                          <Share2 className="w-2.5 h-2.5" />
-                          Shared
                         </span>
                       )}
                     </div>

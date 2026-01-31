@@ -108,7 +108,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         .from('matches')
         .select('*, match_sets(*), creator:profiles!matches_user_id_fkey(*)')
         .or(`user_id.eq.${user.id},opponent_user_id.eq.${user.id},partner_user_id.eq.${user.id},opponent_partner_user_id.eq.${user.id}`)
-        .order('played_at', { ascending: false })
+        .order('created_at', { ascending: false })
 
       // Add isOwner flag and creatorProfile to each match
       const matches = (matchesData || []).map(match => ({
@@ -164,7 +164,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       .from('matches')
       .select('*, match_sets(*), creator:profiles!matches_user_id_fkey(*)')
       .or(`user_id.eq.${user.id},opponent_user_id.eq.${user.id},partner_user_id.eq.${user.id},opponent_partner_user_id.eq.${user.id}`)
-      .order('played_at', { ascending: false })
+      .order('created_at', { ascending: false })
 
     const matches = (matchesData || []).map(match => ({
       ...match,
