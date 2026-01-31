@@ -104,7 +104,7 @@ export default function EditProfilePage() {
 
   const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !profile) return
 
     setAvatarError('')
 
@@ -136,7 +136,7 @@ export default function EditProfilePage() {
       setAvatarPreview(previewUrl)
 
       // Upload to Supabase Storage
-      const fileName = `${profile?.id}-${Date.now()}.jpg`
+      const fileName = `${profile.id}-${Date.now()}.jpg`
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, blob, {
@@ -161,7 +161,7 @@ export default function EditProfilePage() {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
-        .eq('id', profile?.id)
+        .eq('id', profile.id)
 
       if (updateError) {
         console.error('Profile update error:', updateError)
