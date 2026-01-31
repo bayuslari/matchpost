@@ -54,8 +54,16 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired
-  await supabase.auth.getSession()
+  // Refresh session if expired and get user
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Redirect authenticated users away from public routes
+  const publicRoutes = ['/', '/login']
+  const pathname = request.nextUrl.pathname
+
+  if (user && publicRoutes.includes(pathname)) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
 
   // Add security headers
   response.headers.set('X-Content-Type-Options', 'nosniff')
