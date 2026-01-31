@@ -379,7 +379,7 @@ function DashboardContent() {
                         </span>
                       )}
                       {!match.isOwner && (
-                        <Share2 className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+                        <Share2 className="w-3 h-3 text-blue-500 dark:text-blue-400" />
                       )}
                     </div>
                   </div>
