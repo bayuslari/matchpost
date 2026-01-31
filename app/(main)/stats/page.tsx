@@ -24,7 +24,7 @@ export default function StatsPage() {
         {/* Progress Bar */}
         <div className="w-48 space-y-2">
           <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
+            <div className="h-full bg-yellow-500 rounded-full animate-loading-bar"></div>
           </div>
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
         </div>
@@ -41,7 +41,7 @@ export default function StatsPage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 px-6 pb-8 header-safe-area">
+      <div className="bg-yellow-500 text-gray-900 px-6 pb-8 header-safe-area">
         <div className="flex items-center gap-4 mb-2">
           <Link href="/dashboard" className="p-1 hover:bg-white/20 rounded-full">
             <ArrowLeft className="w-5 h-5" />

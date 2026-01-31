@@ -221,7 +221,7 @@ export default function EditProfilePage() {
         {/* Progress Bar */}
         <div className="w-48 space-y-2">
           <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
+            <div className="h-full bg-yellow-500 rounded-full animate-loading-bar"></div>
           </div>
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
         </div>
@@ -232,7 +232,7 @@ export default function EditProfilePage() {
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 px-4 pb-4 header-safe-area">
+      <div className="bg-yellow-500 text-gray-900 px-4 pb-4 header-safe-area">
         <div className="flex items-center gap-4">
           <Link
             href="/profile"
