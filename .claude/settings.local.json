@@ -15,7 +15,9 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add system dark mode support\n\n- Enable dark mode in Tailwind config \\(follows system preference\\)\n- Add dark mode styles to dashboard, profile, profile edit pages\n- Add dark mode to bottom navigation\n- Dark backgrounds, cards, text, and form fields\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(npm run build:*)",
       "Bash(find:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(git commit:*)",
+      "Bash(pnpm run build)"
     ]
   }
 }
