@@ -16,6 +16,7 @@ type EventName =
   // Match events
   | 'record_match_start'
   | 'record_match_complete'
+  | 'edit_match'
   | 'delete_match'
   // Story card events
   | 'view_story_card'
@@ -39,6 +40,7 @@ type EventName =
   // Profile events
   | 'update_profile'
   | 'upload_avatar'
+  | 'complete_profile_banner_click'
   // Other
   | 'new_match_click'
 

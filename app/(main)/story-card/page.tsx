@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Trash2, Download, Share2, Loader2, LogIn } from 'lucide-react'
+import { ArrowLeft, Camera, Trash2, Download, Share2, Loader2, LogIn, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import type { Profile } from '@/lib/database.types'
@@ -31,6 +31,8 @@ function StoryCardContent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [nameDisplayMode, setNameDisplayMode] = useState<'username' | 'fullname'>('fullname')
+  const [isOwner, setIsOwner] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -59,6 +61,8 @@ function StoryCardContent() {
         setLoading(false)
         return
       }
+
+      setCurrentUserId(user.id)
 
       // Fetch profile
       const { data: profileData } = await supabase
@@ -103,6 +107,7 @@ function StoryCardContent() {
           opponent_partner_profile: linkedProfiles.find(p => p.id === matchData.opponent_partner_user_id) || null,
         }
         setMatch(matchWithProfiles)
+        setIsOwner(matchData.user_id === user.id)
       }
 
       // Fetch all matches for stats
@@ -449,13 +454,23 @@ function StoryCardContent() {
             <LogIn className="w-4 h-4" />
             Login
           </Link>
+        ) : isOwner ? (
+          <div className="flex items-center gap-1">
+            <Link
+              href={`/record?matchId=${matchId}&edit=true`}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"
+            >
+              <Pencil className="w-5 h-5" />
+            </Link>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-red-500 dark:text-red-400"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
         ) : (
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-red-500 dark:text-red-400"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+          <div className="w-10" /> // Empty space for non-owners
         )}
       </div>
 

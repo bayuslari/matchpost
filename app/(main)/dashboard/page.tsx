@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Plus, Trash2, Loader2, LogIn } from 'lucide-react'
+import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Share2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
@@ -14,6 +14,7 @@ function DashboardContent() {
   const { profile, matches, stats, isGuest, isLoading, initialize, removeMatch, refreshMatches } = useUserStore()
   const [deleteMatchId, setDeleteMatchId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [displayLimit, setDisplayLimit] = useState(10)
   const supabase = createClient()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -222,6 +223,26 @@ function DashboardContent() {
         </div>
       </div>
 
+      {/* Complete Profile Banner */}
+      {!isGuest && profile && (!profile.bio || !profile.avatar_url) && (
+        <div className="px-6 mt-4">
+          <Link
+            href="/profile/edit"
+            onClick={() => trackEvent('complete_profile_banner_click')}
+            className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-3 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all"
+          >
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center flex-shrink-0">
+              <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-800 dark:text-white text-sm">Complete your profile</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Add photo and bio to personalize your profile</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+          </Link>
+        </div>
+      )}
+
       {/* Demo Banner for Guest Users */}
       {isGuest && (
         <div className="px-6 mt-6">
@@ -265,7 +286,7 @@ function DashboardContent() {
           </div>
         ) : (
           <div className="space-y-3">
-            {matches.map((match) => (
+            {matches.slice(0, displayLimit).map((match) => (
               <div
                 key={match.id}
                 className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-all"
@@ -291,7 +312,15 @@ function DashboardContent() {
                         {match.opponent_name}
                       </div>
                     )}
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{formatDate(match.played_at)}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(match.played_at)}</span>
+                      {!match.isOwner && (
+                        <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <Share2 className="w-2.5 h-2.5" />
+                          Shared
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Link>
                 <div className="flex items-center gap-3">
@@ -301,15 +330,27 @@ function DashboardContent() {
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">{formatScore(match.match_sets)}</div>
                   </Link>
-                  <button
-                    onClick={() => setDeleteMatchId(match.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {match.isOwner && (
+                    <button
+                      onClick={() => setDeleteMatchId(match.id)}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
+
+            {/* Load More Button */}
+            {matches.length > displayLimit && (
+              <button
+                onClick={() => setDisplayLimit(prev => prev + 10)}
+                className="w-full py-3 text-center text-yellow-600 dark:text-yellow-400 font-medium hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-xl transition-all"
+              >
+                Load more ({matches.length - displayLimit} remaining)
+              </button>
+            )}
           </div>
         )}
       </div>

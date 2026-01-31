@@ -2,7 +2,11 @@ import { create } from 'zustand'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
 
-type MatchWithSets = Match & { match_sets: MatchSet[] }
+type MatchWithSets = Match & {
+  match_sets: MatchSet[]
+  isOwner?: boolean  // true if current user created this match
+  creatorProfile?: Profile | null  // profile of match creator (for shared matches)
+}
 
 type MonthlyData = {
   month: string
@@ -99,17 +103,23 @@ export const useUserStore = create<UserState>((set, get) => ({
         }
       }
 
-      // Fetch ALL matches (no limit for accurate stats)
+      // Fetch matches where user is involved (creator, opponent, or partner)
       const { data: matchesData } = await supabase
         .from('matches')
-        .select('*, match_sets(*)')
-        .eq('user_id', user.id)
+        .select('*, match_sets(*), creator:profiles!matches_user_id_fkey(*)')
+        .or(`user_id.eq.${user.id},opponent_user_id.eq.${user.id},partner_user_id.eq.${user.id},opponent_partner_user_id.eq.${user.id}`)
         .order('played_at', { ascending: false })
 
-      const matches = (matchesData || []) as MatchWithSets[]
+      // Add isOwner flag and creatorProfile to each match
+      const matches = (matchesData || []).map(match => ({
+        ...match,
+        isOwner: match.user_id === user.id,
+        creatorProfile: match.creator as Profile | null,
+      })) as MatchWithSets[]
 
-      // Calculate stats
-      const stats = calculateStats(matches)
+      // Calculate stats only for matches user created (owner matches)
+      const ownedMatches = matches.filter(m => m.isOwner)
+      const stats = calculateStats(ownedMatches)
 
       set({
         profile: profileData,
@@ -152,12 +162,19 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     const { data: matchesData } = await supabase
       .from('matches')
-      .select('*, match_sets(*)')
-      .eq('user_id', user.id)
+      .select('*, match_sets(*), creator:profiles!matches_user_id_fkey(*)')
+      .or(`user_id.eq.${user.id},opponent_user_id.eq.${user.id},partner_user_id.eq.${user.id},opponent_partner_user_id.eq.${user.id}`)
       .order('played_at', { ascending: false })
 
-    const matches = (matchesData || []) as MatchWithSets[]
-    const stats = calculateStats(matches)
+    const matches = (matchesData || []).map(match => ({
+      ...match,
+      isOwner: match.user_id === user.id,
+      creatorProfile: match.creator as Profile | null,
+    })) as MatchWithSets[]
+
+    // Calculate stats only for owned matches
+    const ownedMatches = matches.filter(m => m.isOwner)
+    const stats = calculateStats(ownedMatches)
 
     set({ matches, stats })
   },

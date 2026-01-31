@@ -73,6 +73,7 @@ interface UserSearchInputProps {
   onChange: (value: string) => void
   onUserSelect: (user: Profile | null) => void
   isGuestMode?: boolean
+  excludeUserId?: string | null  // Current user's ID to exclude from search results
 }
 
 export default function UserSearchInput({
@@ -83,6 +84,7 @@ export default function UserSearchInput({
   onChange,
   onUserSelect,
   isGuestMode = false,
+  excludeUserId = null,
 }: UserSearchInputProps) {
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<Profile[]>([])
@@ -116,11 +118,18 @@ export default function UserSearchInput({
 
       // Logged in: search real users
       try {
-        const { data } = await supabase
+        let query = supabase
           .from('profiles')
           .select('*')
           .or(`username.ilike.%${value}%,full_name.ilike.%${value}%`)
           .limit(5)
+
+        // Exclude current user from results
+        if (excludeUserId) {
+          query = query.neq('id', excludeUserId)
+        }
+
+        const { data } = await query
 
         setSearchResults(data || [])
         setShowDropdown(true)
