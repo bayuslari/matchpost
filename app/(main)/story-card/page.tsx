@@ -29,6 +29,7 @@ function StoryCardContent() {
   const [loading, setLoading] = useState(true)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [nameDisplayMode, setNameDisplayMode] = useState<'username' | 'fullname'>('username')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -293,12 +294,12 @@ function StoryCardContent() {
   // Get sorted sets for scoreboard
   const sortedSets = match?.match_sets?.sort((a, b) => a.set_number - b.set_number) || []
 
-  // Get display name - prefer username for privacy, fallback to full name
+  // Get display name based on user preference
   const displayName = isDemo
     ? 'You'
-    : profile?.username
+    : nameDisplayMode === 'username' && profile?.username
       ? `@${profile.username}`
-      : profile?.full_name || 'You'
+      : profile?.full_name || profile?.username || 'You'
 
   const currentTemplate = templates.find(t => t.id === selectedTemplate)
   const hasCustomBg = backgroundImage && currentTemplate?.supportsImage
@@ -556,6 +557,35 @@ function StoryCardContent() {
         </div>
       </div>
 
+      {/* Name Display Option */}
+      {!isDemo && profile && (profile.username || profile.full_name) && (
+        <div className="px-6 mb-6">
+          <div className="text-white text-sm mb-3">Display Name</div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setNameDisplayMode('username')}
+              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                nameDisplayMode === 'username'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              {profile.username ? `@${profile.username}` : 'Username'}
+            </button>
+            <button
+              onClick={() => setNameDisplayMode('fullname')}
+              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                nameDisplayMode === 'fullname'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              {profile.full_name || 'Full Name'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="px-6 space-y-3">
         <button
@@ -571,6 +601,12 @@ function StoryCardContent() {
         >
           <Download className="w-5 h-5" />
           Save to Gallery
+        </button>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="w-full text-gray-400 font-medium py-3 hover:text-white transition-all"
+        >
+          Skip for now →
         </button>
       </div>
     </div>

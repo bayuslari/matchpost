@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Outfit } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
 
 const outfit = Outfit({
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'MatchPost',
   },
 }
@@ -25,8 +26,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#16a34a' },
-    { media: '(prefers-color-scheme: dark)', color: '#111827' },
+    { media: '(prefers-color-scheme: light)', color: '#eab308' },
+    { media: '(prefers-color-scheme: dark)', color: '#eab308' },
   ],
   viewportFit: 'cover',
 }
@@ -42,6 +43,7 @@ export default function RootLayout({
         <div className="max-w-md mx-auto min-h-full">
           {children}
         </div>
+        <Analytics />
       </body>
     </html>
   )
