@@ -92,7 +92,7 @@ export const MinimalTemplate = forwardRef<HTMLDivElement, TemplateProps>(
                     <div className="text-gray-500 font-medium text-sm">
                       {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
                     </div>
-                    <div className="text-gray-400 text-sm">
+                    <div className="text-gray-500 font-medium text-sm">
                       {formatProfileName(match.opponent_partner_profile, match.opponent_partner_name, 'Partner', nameDisplayMode)}
                     </div>
                   </div>

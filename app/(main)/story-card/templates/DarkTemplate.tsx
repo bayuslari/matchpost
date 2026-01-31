@@ -102,7 +102,7 @@ export const DarkTemplate = forwardRef<HTMLDivElement, TemplateProps>(
                     <div className="text-white/80 font-semibold text-sm">
                       {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
                     </div>
-                    <div className="text-white/60 text-sm">
+                    <div className="text-white/80 font-semibold text-sm">
                       {formatProfileName(match.opponent_partner_profile, match.opponent_partner_name, 'Partner', nameDisplayMode)}
                     </div>
                   </div>

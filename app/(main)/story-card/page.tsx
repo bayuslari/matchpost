@@ -306,18 +306,18 @@ function StoryCardContent() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh bg-gray-900 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-gray-900 dark:text-white animate-spin" />
       </div>
     )
   }
 
   if (!match) {
     return (
-      <div className="min-h-dvh bg-gray-900 flex flex-col items-center justify-center text-white p-6">
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center text-gray-900 dark:text-white p-6">
         <div className="text-4xl mb-4">🎾</div>
-        <p className="text-gray-400 mb-4">Match not found</p>
-        <Link href="/dashboard" className="text-yellow-400 hover:underline">
+        <p className="text-gray-500 dark:text-gray-400 mb-4">Match not found</p>
+        <Link href="/dashboard" className="text-yellow-600 dark:text-yellow-400 hover:underline">
           Back to Dashboard
         </Link>
       </div>
@@ -361,17 +361,17 @@ function StoryCardContent() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-900 pb-8">
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6">
-          <div className="bg-gray-800 rounded-2xl p-6 max-w-sm w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-8 h-8 text-red-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Delete Match?</h3>
-              <p className="text-gray-400 text-sm">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Match?</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
                 This will permanently delete this match and all its data. This action cannot be undone.
               </p>
             </div>
@@ -379,7 +379,7 @@ function StoryCardContent() {
               <button
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
-                className="flex-1 py-3 px-4 bg-gray-700 text-white font-semibold rounded-xl hover:bg-gray-600 transition-all disabled:opacity-50"
+                className="flex-1 py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -403,10 +403,10 @@ function StoryCardContent() {
       )}
 
       {/* Header */}
-      <div className="bg-gray-900 p-4 flex items-center justify-between text-white">
+      <div className="bg-white dark:bg-gray-900 p-4 flex items-center justify-between text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-800">
         <Link
           href="/dashboard"
-          className="p-2 hover:bg-gray-800 rounded-full"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
@@ -414,7 +414,7 @@ function StoryCardContent() {
         {isDemo ? (
           <Link
             href="/login"
-            className="flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 px-3 py-1.5 rounded-full text-sm font-semibold transition-all"
+            className="flex items-center gap-1.5 bg-yellow-500 hover:bg-yellow-600 px-3 py-1.5 rounded-full text-sm font-semibold text-gray-900 transition-all"
           >
             <LogIn className="w-4 h-4" />
             Login
@@ -422,7 +422,7 @@ function StoryCardContent() {
         ) : (
           <button
             onClick={() => setShowDeleteModal(true)}
-            className="p-2 hover:bg-gray-800 rounded-full text-red-400"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-red-500 dark:text-red-400"
           >
             <Trash2 className="w-5 h-5" />
           </button>
@@ -432,7 +432,7 @@ function StoryCardContent() {
       {/* Demo Banner */}
       {isDemo && (
         <div className="mx-6 mt-4 mb-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-3">
-          <p className="text-yellow-200 text-sm text-center">
+          <p className="text-yellow-700 dark:text-yellow-200 text-sm text-center">
             🎉 Demo Mode - Login to save your matches!
           </p>
         </div>
@@ -440,19 +440,19 @@ function StoryCardContent() {
 
       {/* Preview */}
       <div className={`px-6 mb-6 ${!isDemo ? 'mt-4' : ''}`}>
-        <div className="text-gray-400 text-sm mb-2 text-center">Preview</div>
+        <div className="text-gray-500 dark:text-gray-400 text-sm mb-2 text-center">Preview</div>
         {renderTemplate()}
       </div>
 
       {/* Photo Upload */}
       <div className="px-6 mb-4">
-        <div className="text-white text-sm mb-3">Background Photo</div>
+        <div className="text-gray-700 dark:text-white text-sm mb-3">Background Photo</div>
         <div className="flex gap-3">
           <label className="flex-1 cursor-pointer">
-            <div className="bg-white/10 border-2 border-dashed border-white/30 rounded-xl p-4 text-center hover:bg-white/20 transition-all">
-              <Camera className="w-6 h-6 mx-auto mb-1 text-white" />
-              <div className="text-white text-sm">Upload Photo</div>
-              <div className="text-white/50 text-xs">JPG, PNG</div>
+            <div className="bg-gray-100 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/30 rounded-xl p-4 text-center hover:bg-gray-200 dark:hover:bg-white/20 transition-all">
+              <Camera className="w-6 h-6 mx-auto mb-1 text-gray-500 dark:text-white" />
+              <div className="text-gray-700 dark:text-white text-sm">Upload Photo</div>
+              <div className="text-gray-400 dark:text-white/50 text-xs">JPG, PNG</div>
             </div>
             <input
               ref={fileInputRef}
@@ -475,7 +475,7 @@ function StoryCardContent() {
         </div>
 
         {backgroundImage && (
-          <div className="mt-2 flex items-center gap-2 text-yellow-400 text-sm">
+          <div className="mt-2 flex items-center gap-2 text-yellow-600 dark:text-yellow-400 text-sm">
             <span>✓</span>
             <span>Photo added! Select a template that supports custom backgrounds.</span>
           </div>
@@ -484,15 +484,15 @@ function StoryCardContent() {
 
       {/* Template Selection */}
       <div className="px-4 mb-6">
-        <div className="text-white text-sm mb-3 px-2">Choose Template</div>
+        <div className="text-gray-700 dark:text-white text-sm mb-3 px-2">Choose Template</div>
         <div className="flex gap-3 overflow-x-auto py-1 px-2 hide-scrollbar">
           {templates.map((template) => (
             <button
               key={template.id}
               onClick={() => setSelectedTemplate(template.id)}
               className={`flex-shrink-0 w-20 h-28 rounded-xl overflow-hidden flex flex-col justify-between p-2 transition-all relative ${
-                selectedTemplate === template.id ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-900' : ''
-              } ${template.id === 'dark' ? 'border border-gray-700/50' : ''}`}
+                selectedTemplate === template.id ? 'ring-2 ring-yellow-500 dark:ring-white ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-900' : ''
+              } ${template.id === 'dark' ? 'border border-gray-300 dark:border-gray-700/50' : ''}`}
             >
               {/* Background */}
               <div className={`absolute inset-0 bg-gradient-to-br ${template.gradient}`}></div>
@@ -553,7 +553,7 @@ function StoryCardContent() {
             </button>
           ))}
         </div>
-        <div className="text-white/40 text-xs mt-2 px-2">
+        <div className="text-gray-400 dark:text-white/40 text-xs mt-2 px-2">
           📷 = Supports custom background photo
         </div>
       </div>
@@ -561,14 +561,14 @@ function StoryCardContent() {
       {/* Name Display Option */}
       {!isDemo && profile && (profile.username || profile.full_name) && (
         <div className="px-6 mb-6">
-          <div className="text-white text-sm mb-3">Display Name</div>
+          <div className="text-gray-700 dark:text-white text-sm mb-3">Display Name</div>
           <div className="flex gap-2">
             <button
               onClick={() => setNameDisplayMode('username')}
               className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
                 nameDisplayMode === 'username'
                   ? 'bg-yellow-500 text-gray-900'
-                  : 'bg-white/10 text-white hover:bg-white/20'
+                  : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-white/20'
               }`}
             >
               {profile.username ? `@${profile.username}` : 'Username'}
@@ -578,7 +578,7 @@ function StoryCardContent() {
               className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
                 nameDisplayMode === 'fullname'
                   ? 'bg-yellow-500 text-gray-900'
-                  : 'bg-white/10 text-white hover:bg-white/20'
+                  : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-white/20'
               }`}
             >
               {profile.full_name || 'Full Name'}
@@ -588,7 +588,7 @@ function StoryCardContent() {
       )}
 
       {/* Actions */}
-      <div className="px-6 space-y-3">
+      <div className="px-6 space-y-3 pb-4">
         <button
           onClick={handleShare}
           className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-all"
@@ -598,14 +598,14 @@ function StoryCardContent() {
         </button>
         <button
           onClick={() => downloadImage()}
-          className="w-full bg-white/10 text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-white/20 transition-all"
+          className="w-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-300 dark:hover:bg-white/20 transition-all"
         >
           <Download className="w-5 h-5" />
           Save to Gallery
         </button>
         <button
           onClick={() => router.push('/dashboard')}
-          className="w-full text-gray-400 font-medium py-3 hover:text-white transition-all"
+          className="w-full text-gray-500 dark:text-gray-400 font-medium py-3 hover:text-gray-700 dark:hover:text-white transition-all"
         >
           Skip for now →
         </button>
@@ -617,8 +617,8 @@ function StoryCardContent() {
 export default function StoryCardPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-dvh bg-gray-900 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-gray-900 dark:text-white animate-spin" />
       </div>
     }>
       <StoryCardContent />
