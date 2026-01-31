@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Plus, Trash2, Loader2, LogIn, User, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Share2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
@@ -368,9 +368,7 @@ function DashboardContent() {
                     )}
                     {!match.isOwner && (
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
-                          Shared
-                        </span>
+                        <Share2 className="w-3 h-3 text-blue-500 dark:text-blue-400" />
                         <span>{match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'} recorded this match</span>
                       </div>
                     )}
