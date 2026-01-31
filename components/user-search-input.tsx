@@ -74,6 +74,7 @@ interface UserSearchInputProps {
   onUserSelect: (user: Profile | null) => void
   isGuestMode?: boolean
   excludeUserId?: string | null  // Current user's ID to exclude from search results
+  recentPlayers?: Profile[]  // Recent opponents/partners to show as suggestions
 }
 
 export default function UserSearchInput({
@@ -85,10 +86,12 @@ export default function UserSearchInput({
   onUserSelect,
   isGuestMode = false,
   excludeUserId = null,
+  recentPlayers = [],
 }: UserSearchInputProps) {
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<Profile[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showRecent, setShowRecent] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
@@ -98,9 +101,15 @@ export default function UserSearchInput({
     const searchUsers = async () => {
       if (value.length < 2 || selectedUser) {
         setSearchResults([])
+        // Show recent players if value is short and we have them
+        if (value.length < 2 && recentPlayers.length > 0 && !selectedUser) {
+          setShowRecent(true)
+        }
         return
       }
 
+      // Hide recent when searching
+      setShowRecent(false)
       setIsSearching(true)
 
       // Guest mode: filter dummy players
@@ -148,6 +157,7 @@ export default function UserSearchInput({
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false)
+        setShowRecent(false)
       }
     }
 
@@ -159,6 +169,7 @@ export default function UserSearchInput({
     onUserSelect(user)
     onChange(user.full_name || user.username || '')
     setShowDropdown(false)
+    setShowRecent(false)
   }
 
   const handleClearUser = () => {
@@ -188,7 +199,16 @@ export default function UserSearchInput({
           placeholder={placeholder}
           value={value}
           onChange={handleInputChange}
-          onFocus={() => value.length >= 2 && !selectedUser && setShowDropdown(true)}
+          onFocus={() => {
+            if (selectedUser) return
+            if (value.length >= 2) {
+              setShowDropdown(true)
+              setShowRecent(false)
+            } else if (recentPlayers.length > 0) {
+              setShowRecent(true)
+              setShowDropdown(false)
+            }
+          }}
           className={`input pl-11 pr-10 ${selectedUser ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : ''}`}
         />
         <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6">
@@ -288,6 +308,47 @@ export default function UserSearchInput({
               ? 'No demo players found. Try "John", "Jane", or "Alex".'
               : 'No registered users found. The name will be saved as text.'}
           </p>
+        </div>
+      )}
+
+      {/* Recent players dropdown */}
+      {showRecent && recentPlayers.length > 0 && !selectedUser && (
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+            Recent players
+          </div>
+          {recentPlayers.map((user) => (
+            <button
+              key={user.id}
+              type="button"
+              onClick={() => handleSelectUser(user)}
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              {user.avatar_url ? (
+                <Image
+                  src={user.avatar_url}
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-gray-400 dark:text-gray-400" />
+                </div>
+              )}
+              <div className="text-left min-w-0">
+                <div className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                  {user.full_name || user.username}
+                </div>
+                {user.username && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    @{user.username}{user.location && ` • ${user.location}`}
+                  </div>
+                )}
+              </div>
+            </button>
+          ))}
         </div>
       )}
     </div>

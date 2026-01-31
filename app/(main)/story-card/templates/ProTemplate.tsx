@@ -10,7 +10,7 @@ export const ProTemplate = forwardRef<HTMLDivElement, TemplateProps>(
       className="mx-auto w-72 h-[504px] rounded-3xl overflow-hidden shadow-2xl relative bg-[#1a6b9c]"
     >
       <img
-        src="/ao-bg.png"
+        src="/ao-bg.jpg"
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
         crossOrigin="anonymous"
@@ -31,11 +31,9 @@ export const ProTemplate = forwardRef<HTMLDivElement, TemplateProps>(
           />
         </div>
 
-        <div className="flex-1 min-h-[10px]"></div>
-
-        <div className="pb-4 text-center space-y-1 flex-shrink-0">
-          <div className="text-white/90 text-sm font-medium">{formatDate(match.played_at)}</div>
-          <div className="text-white/50 text-[10px] font-semibold tracking-widest">MATCHPOST</div>
+        <div className="mt-4 pb-16 text-center space-y-1 flex-shrink-0">
+          <div className="text-white/90 text-xs font-medium">{formatDate(match.played_at)}</div>
+          <div className="text-white/50 text-[9px] font-semibold tracking-widest">MATCHPOST.APP</div>
         </div>
       </div>
     </div>

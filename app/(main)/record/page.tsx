@@ -44,6 +44,7 @@ function RecordMatchContent() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [recentPlayers, setRecentPlayers] = useState<Profile[]>([])
 
   // Check if user is logged in and load match data if editing
   useEffect(() => {
@@ -51,6 +52,38 @@ function RecordMatchContent() {
       const { data: { user } } = await supabase.auth.getUser()
       setIsGuestMode(!user)
       setCurrentUserId(user?.id || null)
+
+      // Fetch recent players from match history
+      if (user) {
+        const { data: recentMatches } = await supabase
+          .from('matches')
+          .select('opponent_user_id, partner_user_id, opponent_partner_user_id')
+          .eq('user_id', user.id)
+          .order('played_at', { ascending: false })
+          .limit(10)
+
+        if (recentMatches) {
+          // Collect unique user IDs (excluding nulls)
+          const userIds = new Set<string>()
+          recentMatches.forEach(match => {
+            if (match.opponent_user_id) userIds.add(match.opponent_user_id)
+            if (match.partner_user_id) userIds.add(match.partner_user_id)
+            if (match.opponent_partner_user_id) userIds.add(match.opponent_partner_user_id)
+          })
+
+          if (userIds.size > 0) {
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('id', Array.from(userIds))
+              .limit(5)
+
+            if (profiles) {
+              setRecentPlayers(profiles)
+            }
+          }
+        }
+      }
 
       // Load existing match data for edit mode
       if (isEditMode && matchId && user) {
@@ -389,6 +422,7 @@ function RecordMatchContent() {
             onUserSelect={setPartnerUser}
             isGuestMode={isGuestMode}
             excludeUserId={currentUserId}
+            recentPlayers={recentPlayers}
           />
         )}
 
@@ -402,6 +436,7 @@ function RecordMatchContent() {
           onUserSelect={setOpponentUser}
           isGuestMode={isGuestMode}
           excludeUserId={currentUserId}
+          recentPlayers={recentPlayers}
         />
 
         {/* Opponent 2 (Doubles only) */}
@@ -415,6 +450,7 @@ function RecordMatchContent() {
             onUserSelect={setOpponent2User}
             isGuestMode={isGuestMode}
             excludeUserId={currentUserId}
+            recentPlayers={recentPlayers}
           />
         )}
 

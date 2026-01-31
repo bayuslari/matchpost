@@ -10,9 +10,7 @@ import type { Profile } from '@/lib/database.types'
 import { templates, type MatchWithSets } from './types'
 import { ProTemplate } from './templates/ProTemplate'
 import { PhotoProTemplate } from './templates/PhotoProTemplate'
-import { SportyTemplate } from './templates/SportyTemplate'
 import { DarkTemplate } from './templates/DarkTemplate'
-import { NeonTemplate } from './templates/NeonTemplate'
 import { MinimalTemplate } from './templates/MinimalTemplate'
 
 function StoryCardContent() {
@@ -467,12 +465,8 @@ function StoryCardContent() {
         return <ProTemplate ref={cardRef} {...templateProps} />
       case 'photo-pro':
         return <PhotoProTemplate ref={cardRef} {...templateProps} />
-      case 'sporty':
-        return <SportyTemplate ref={cardRef} {...templateProps} />
       case 'dark':
         return <DarkTemplate ref={cardRef} {...templateProps} />
-      case 'neon':
-        return <NeonTemplate ref={cardRef} {...templateProps} />
       case 'minimal':
         return <MinimalTemplate ref={cardRef} {...templateProps} />
       default:
@@ -645,35 +639,22 @@ function StoryCardContent() {
                     <div className="bg-white/70 rounded h-2.5 w-full"></div>
                   </div>
                 )}
-                {template.id === 'sporty' && (
-                  <div className="flex flex-col gap-1 items-center">
-                    <div className="bg-white/30 rounded-full w-6 h-6"></div>
-                    <div className="bg-white text-[8px] font-bold px-1.5 rounded">VS</div>
-                    <div className="bg-black/30 rounded-full w-6 h-6"></div>
-                  </div>
-                )}
                 {template.id === 'dark' && (
                   <div className="text-center">
                     <div className="text-yellow-400 text-[10px] font-bold">WIN</div>
                     <div className="text-white text-[8px]">6-4</div>
                   </div>
                 )}
-                {template.id === 'neon' && (
-                  <div className="flex flex-col gap-1">
-                    <div className="border border-cyan-400/50 rounded h-2.5 w-full"></div>
-                    <div className="border border-pink-400/50 rounded h-2.5 w-full"></div>
-                  </div>
-                )}
                 {template.id === 'minimal' && (
-                  <div className="text-center">
-                    <div className="text-gray-800 text-xs font-light">6-4</div>
+                  <div className="flex flex-col h-full">
+                    <div className="text-white text-[6px] font-black italic leading-none">TMP</div>
+                    <div className="flex-1"></div>
+                    <div className="border border-white/60 text-[5px] text-white text-center py-0.5">6-4</div>
                   </div>
                 )}
               </div>
 
-              <span className={`text-xs font-medium relative z-10 ${
-                template.id === 'minimal' ? 'text-gray-700' : 'text-white'
-              }`}>
+              <span className="text-xs font-medium relative z-10 text-white">
                 {template.name}
               </span>
 

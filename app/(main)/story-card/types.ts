@@ -45,8 +45,6 @@ export function formatProfileName(
 export const templates = [
   { id: 'pro', name: 'Pro', gradient: 'from-sky-600 via-sky-500 to-cyan-400', supportsImage: false },
   { id: 'photo-pro', name: 'Photo Pro', gradient: 'from-gray-800 to-gray-900', supportsImage: true },
-  { id: 'sporty', name: 'Sporty', gradient: 'from-yellow-500 via-orange-500 to-red-500', supportsImage: true },
   { id: 'dark', name: 'Dark', gradient: 'from-gray-900 via-gray-800 to-black', supportsImage: true },
-  { id: 'neon', name: 'Neon', gradient: 'from-purple-600 via-pink-500 to-cyan-400', supportsImage: true },
-  { id: 'minimal', name: 'Minimal', gradient: 'from-white to-gray-100', supportsImage: true },
+  { id: 'minimal', name: 'Minimal', gradient: 'from-amber-700 via-orange-800 to-amber-900', supportsImage: true },
 ]
