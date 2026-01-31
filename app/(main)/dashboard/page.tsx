@@ -32,12 +32,32 @@ function DashboardContent() {
     }
   }, [searchParams, refreshMatches, router])
 
-  // Format score from sets
-  const formatScore = (matchSets: MatchSet[]) => {
+  // Check if viewer is on opponent side for a shared match
+  const isViewerOnOpponentSide = (match: typeof matches[0]) => {
+    if (match.isOwner || !profile?.id) return false
+    return match.opponent_user_id === profile.id || match.opponent_partner_user_id === profile.id
+  }
+
+  // Get result from viewer's perspective
+  const getViewerResult = (match: typeof matches[0]) => {
+    if (match.isOwner) return match.result
+    // For shared matches, check if viewer is on opponent side
+    if (isViewerOnOpponentSide(match)) {
+      // Flip the result
+      if (match.result === 'win') return 'loss'
+      if (match.result === 'loss') return 'win'
+    }
+    return match.result
+  }
+
+  // Format score from sets (with optional flip for viewer's perspective)
+  const formatScore = (matchSets: MatchSet[], flipScore: boolean = false) => {
     if (!matchSets || matchSets.length === 0) return '-'
     return matchSets
       .sort((a, b) => a.set_number - b.set_number)
-      .map(s => `${s.player_score}-${s.opponent_score}`)
+      .map(s => flipScore
+        ? `${s.opponent_score}-${s.player_score}`
+        : `${s.player_score}-${s.opponent_score}`)
       .join(', ')
   }
 
@@ -295,7 +315,12 @@ function DashboardContent() {
                   href={`/story-card?matchId=${match.id}`}
                   className="flex items-center gap-3 flex-1 min-w-0"
                 >
-                  <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${match.isOwner ? (match.result === 'win' ? 'bg-yellow-500' : 'bg-red-400') : 'bg-blue-400'}`}></div>
+                  <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${
+                    (() => {
+                      const viewerResult = getViewerResult(match)
+                      return viewerResult === 'win' ? 'bg-yellow-500' : viewerResult === 'loss' ? 'bg-red-400' : 'bg-gray-400'
+                    })()
+                  }`}></div>
                   <div className="min-w-0 flex-1">
                     {match.isOwner ? (
                       // Owner view: show opponent names
@@ -327,6 +352,9 @@ function DashboardContent() {
                             </span>
                           )}
                         </div>
+                        {match.match_type === 'doubles' && match.partner_name && (
+                          <div className="truncate text-sm text-gray-600 dark:text-gray-300">{match.partner_name}</div>
+                        )}
                         <div className="text-xs text-gray-500 dark:text-gray-400">recorded this match</div>
                       </div>
                     )}
@@ -343,10 +371,18 @@ function DashboardContent() {
                 </Link>
                 <div className="flex items-center gap-3">
                   <Link href={`/story-card?matchId=${match.id}`} className="text-right">
-                    <div className={`font-bold ${match.result === 'win' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-500 dark:text-red-400'}`}>
-                      {match.result === 'win' ? 'WIN' : match.result === 'loss' ? 'LOSS' : 'DRAW'}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{formatScore(match.match_sets)}</div>
+                    {(() => {
+                      const viewerResult = getViewerResult(match)
+                      const shouldFlipScore = isViewerOnOpponentSide(match)
+                      return (
+                        <>
+                          <div className={`font-bold ${viewerResult === 'win' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-500 dark:text-red-400'}`}>
+                            {viewerResult === 'win' ? 'WIN' : viewerResult === 'loss' ? 'LOSS' : 'DRAW'}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{formatScore(match.match_sets, shouldFlipScore)}</div>
+                        </>
+                      )
+                    })()}
                   </Link>
                   {match.isOwner && (
                     <button
