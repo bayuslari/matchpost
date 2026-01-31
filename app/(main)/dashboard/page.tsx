@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -10,7 +10,7 @@ import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
 import type { MatchSet } from '@/lib/database.types'
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { profile, matches, stats, isGuest, isLoading, initialize, removeMatch, refreshMatches } = useUserStore()
   const [deleteMatchId, setDeleteMatchId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -314,5 +314,26 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-6">
+        <div className="text-4xl font-outfit font-black tracking-tight">
+          <span className="text-yellow-500 animate-pulse">MATCH</span>
+          <span className="text-gray-800 dark:text-white">POST</span>
+        </div>
+        <div className="w-48 space-y-2">
+          <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 rounded-full animate-loading-bar"></div>
+          </div>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }
