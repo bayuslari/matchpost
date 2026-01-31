@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/analytics'
 
 const navItems = [
-  { href: '/dashboard', label: 'Home', icon: Home, event: 'nav_home' as const },
-  { href: '/groups', label: 'Groups', icon: Users, event: 'nav_groups' as const },
-  { href: '/stats', label: 'Stats', icon: BarChart3, event: 'nav_stats' as const },
-  { href: '/profile', label: 'Profile', icon: User, event: 'nav_profile' as const },
+  { href: '/dashboard', label: 'Home', icon: Home, event: 'nav_home' as const, disabled: false },
+  { href: '/groups', label: 'Groups', icon: Users, event: 'nav_groups' as const, disabled: true },
+  { href: '/stats', label: 'Stats', icon: BarChart3, event: 'nav_stats' as const, disabled: false },
+  { href: '/profile', label: 'Profile', icon: User, event: 'nav_profile' as const, disabled: false },
 ]
 
 export function BottomNav() {
@@ -21,6 +21,18 @@ export function BottomNav() {
       {navItems.map((item) => {
         const isActive = pathname.startsWith(item.href)
         const Icon = item.icon
+
+        if (item.disabled) {
+          return (
+            <div
+              key={item.href}
+              className="flex flex-col items-center text-gray-300 dark:text-gray-700 cursor-not-allowed"
+            >
+              <Icon className="w-6 h-6" />
+              <span className="text-xs mt-1">{item.label}</span>
+            </div>
+          )
+        }
 
         return (
           <Link
