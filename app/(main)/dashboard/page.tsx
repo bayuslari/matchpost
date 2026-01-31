@@ -326,12 +326,7 @@ function DashboardContent() {
                       // Owner view: show opponent names
                       match.match_type === 'doubles' ? (
                         <div className="font-semibold text-gray-800 dark:text-white">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate">{match.opponent_name}</span>
-                            <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
-                              2v2
-                            </span>
-                          </div>
+                          <div className="truncate">{match.opponent_name}</div>
                           <div className="truncate">{match.opponent_partner_name || 'Partner'}</div>
                         </div>
                       ) : (
@@ -340,26 +335,34 @@ function DashboardContent() {
                         </div>
                       )
                     ) : (
-                      // Shared view: show creator's name (who recorded the match)
+                      // Shared view: show opponent names (creator's team from viewer's perspective)
                       <div className="font-semibold text-gray-800 dark:text-white">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate">
+                        {match.match_type === 'doubles' ? (
+                          <>
+                            <div className="truncate">
+                              {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
+                            </div>
+                            <div className="truncate">
+                              {match.partner_name || 'Partner'}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="truncate">
                             {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
-                          </span>
-                          {match.match_type === 'doubles' && (
-                            <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
-                              2v2
-                            </span>
-                          )}
-                        </div>
-                        {match.match_type === 'doubles' && match.partner_name && (
-                          <div className="truncate text-sm text-gray-600 dark:text-gray-300">{match.partner_name}</div>
+                          </div>
                         )}
-                        <div className="text-xs text-gray-500 dark:text-gray-400">recorded this match</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'} shared this match
+                        </div>
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(match.played_at)}</span>
+                      {match.match_type === 'doubles' && (
+                        <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                          2v2
+                        </span>
+                      )}
                       {!match.isOwner && (
                         <span className="text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1">
                           <Share2 className="w-2.5 h-2.5" />
