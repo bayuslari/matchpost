@@ -117,9 +117,21 @@ export const useUserStore = create<UserState>((set, get) => ({
         creatorProfile: match.creator as Profile | null,
       })) as MatchWithSets[]
 
-      // Calculate stats only for matches user created (owner matches)
-      const ownedMatches = matches.filter(m => m.isOwner)
-      const stats = calculateStats(ownedMatches)
+      // Calculate stats for all matches (with result flipped for opponent-side shared matches)
+      const statsMatches = matches.map(m => {
+        if (m.isOwner) return m
+        // For shared matches, check if user is on opponent side
+        const isOnOpponentSide = m.opponent_user_id === user.id || m.opponent_partner_user_id === user.id
+        if (isOnOpponentSide) {
+          // Flip the result for stats
+          let flippedResult = m.result
+          if (m.result === 'win') flippedResult = 'loss'
+          else if (m.result === 'loss') flippedResult = 'win'
+          return { ...m, result: flippedResult }
+        }
+        return m
+      })
+      const stats = calculateStats(statsMatches)
 
       set({
         profile: profileData,
@@ -172,9 +184,21 @@ export const useUserStore = create<UserState>((set, get) => ({
       creatorProfile: match.creator as Profile | null,
     })) as MatchWithSets[]
 
-    // Calculate stats only for owned matches
-    const ownedMatches = matches.filter(m => m.isOwner)
-    const stats = calculateStats(ownedMatches)
+    // Calculate stats for all matches (with result flipped for opponent-side shared matches)
+    const statsMatches = matches.map(m => {
+      if (m.isOwner) return m
+      // For shared matches, check if user is on opponent side
+      const isOnOpponentSide = m.opponent_user_id === user.id || m.opponent_partner_user_id === user.id
+      if (isOnOpponentSide) {
+        // Flip the result for stats
+        let flippedResult = m.result
+        if (m.result === 'win') flippedResult = 'loss'
+        else if (m.result === 'loss') flippedResult = 'win'
+        return { ...m, result: flippedResult }
+      }
+      return m
+    })
+    const stats = calculateStats(statsMatches)
 
     set({ matches, stats })
   },
