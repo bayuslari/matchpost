@@ -99,15 +99,15 @@ export const DarkTemplate = forwardRef<HTMLDivElement, TemplateProps>(
                 )}
                 {isDoubles ? (
                   <div className="text-left">
-                    <div className="text-white/80 font-semibold text-sm">
+                    <div className="text-white font-semibold text-sm">
                       {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
                     </div>
-                    <div className="text-white/80 font-semibold text-sm">
+                    <div className="text-white font-semibold text-sm">
                       {formatProfileName(match.opponent_partner_profile, match.opponent_partner_name, 'Partner', nameDisplayMode)}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-white/80 font-semibold text-sm">
+                  <div className="text-white font-semibold text-sm">
                     {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
                   </div>
                 )}

@@ -29,7 +29,7 @@ function StoryCardContent() {
   const [loading, setLoading] = useState(true)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [nameDisplayMode, setNameDisplayMode] = useState<'username' | 'fullname'>('username')
+  const [nameDisplayMode, setNameDisplayMode] = useState<'username' | 'fullname'>('fullname')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -564,16 +564,6 @@ function StoryCardContent() {
           <div className="text-gray-700 dark:text-white text-sm mb-3">Display Name</div>
           <div className="flex gap-2">
             <button
-              onClick={() => setNameDisplayMode('username')}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
-                nameDisplayMode === 'username'
-                  ? 'bg-yellow-500 text-gray-900'
-                  : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-white/20'
-              }`}
-            >
-              {profile.username ? `@${profile.username}` : 'Username'}
-            </button>
-            <button
               onClick={() => setNameDisplayMode('fullname')}
               className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
                 nameDisplayMode === 'fullname'
@@ -582,6 +572,16 @@ function StoryCardContent() {
               }`}
             >
               {profile.full_name || 'Full Name'}
+            </button>
+            <button
+              onClick={() => setNameDisplayMode('username')}
+              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                nameDisplayMode === 'username'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-white/20'
+              }`}
+            >
+              {profile.username ? `@${profile.username}` : 'Username'}
             </button>
           </div>
         </div>
