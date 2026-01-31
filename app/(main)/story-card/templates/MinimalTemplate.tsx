@@ -1,9 +1,10 @@
 import { forwardRef } from 'react'
 import type { TemplateProps } from '../types'
+import { formatProfileName } from '../types'
 import { Avatar } from '../components/Avatar'
 
 export const MinimalTemplate = forwardRef<HTMLDivElement, TemplateProps>(
-  ({ match, profile, displayName, backgroundImage, hasCustomBg, formatScore, formatDate }, ref) => {
+  ({ match, profile, displayName, nameDisplayMode, backgroundImage, hasCustomBg, formatScore, formatDate }, ref) => {
     const isDoubles = match.match_type === 'doubles'
 
     return (
@@ -66,7 +67,7 @@ export const MinimalTemplate = forwardRef<HTMLDivElement, TemplateProps>(
                   <div className="text-left">
                     <div className="text-gray-700 font-medium text-sm">{displayName}</div>
                     <div className="text-gray-700 font-medium text-sm">
-                      {match.partner_profile ? `@${match.partner_profile.username}` : (match.partner_name || 'Partner')}
+                      {formatProfileName(match.partner_profile, match.partner_name, 'Partner', nameDisplayMode)}
                     </div>
                   </div>
                 ) : (
@@ -88,13 +89,17 @@ export const MinimalTemplate = forwardRef<HTMLDivElement, TemplateProps>(
                 )}
                 {isDoubles ? (
                   <div className="text-left">
-                    <div className="text-gray-500 font-medium text-sm">{match.opponent_name}</div>
+                    <div className="text-gray-500 font-medium text-sm">
+                      {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
+                    </div>
                     <div className="text-gray-400 text-sm">
-                      {match.opponent_partner_profile ? `@${match.opponent_partner_profile.username}` : (match.opponent_partner_name || 'Partner')}
+                      {formatProfileName(match.opponent_partner_profile, match.opponent_partner_name, 'Partner', nameDisplayMode)}
                     </div>
                   </div>
                 ) : (
-                  <span className="text-gray-500 font-medium text-sm">{match.opponent_name}</span>
+                  <span className="text-gray-500 font-medium text-sm">
+                    {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
+                  </span>
                 )}
               </div>
             </div>

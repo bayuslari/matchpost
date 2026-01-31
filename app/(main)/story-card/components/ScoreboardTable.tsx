@@ -1,15 +1,34 @@
 import type { MatchSet, Profile } from '@/lib/database.types'
-import type { MatchWithSets } from '../types'
+import type { MatchWithSets, NameDisplayMode } from '../types'
 
 interface ScoreboardTableProps {
   headerColor: string
   match: MatchWithSets
   profile: Profile | null
   displayName: string
+  nameDisplayMode: NameDisplayMode
   sortedSets: MatchSet[]
 }
 
-export function ScoreboardTable({ headerColor, match, profile, displayName, sortedSets }: ScoreboardTableProps) {
+// Helper function to format profile name based on display mode
+function formatProfileName(
+  linkedProfile: Profile | null | undefined,
+  fallbackName: string | null | undefined,
+  defaultLabel: string,
+  nameDisplayMode: NameDisplayMode
+): string {
+  if (!linkedProfile) {
+    return fallbackName || defaultLabel
+  }
+
+  if (nameDisplayMode === 'username' && linkedProfile.username) {
+    return `@${linkedProfile.username}`
+  }
+
+  return linkedProfile.full_name || linkedProfile.username || fallbackName || defaultLabel
+}
+
+export function ScoreboardTable({ headerColor, match, profile, displayName, nameDisplayMode, sortedSets }: ScoreboardTableProps) {
   return (
     <>
       {/* Match Type Header Row */}
@@ -51,7 +70,7 @@ export function ScoreboardTable({ headerColor, match, profile, displayName, sort
                 )}
               </div>
               <div className="font-semibold text-sm text-gray-900 truncate">
-                {match.partner_profile ? `@${match.partner_profile.username}` : (match.partner_name || 'Partner')}
+                {formatProfileName(match.partner_profile, match.partner_name, 'Partner', nameDisplayMode)}
               </div>
             </div>
           </div>
@@ -124,7 +143,7 @@ export function ScoreboardTable({ headerColor, match, profile, displayName, sort
                 )}
               </div>
               <div className="font-semibold text-sm text-gray-900 truncate">
-                {match.opponent_profile ? `@${match.opponent_profile.username}` : match.opponent_name}
+                {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -138,7 +157,7 @@ export function ScoreboardTable({ headerColor, match, profile, displayName, sort
                 )}
               </div>
               <div className="font-semibold text-sm text-gray-900 truncate">
-                {match.opponent_partner_profile ? `@${match.opponent_partner_profile.username}` : (match.opponent_partner_name || 'Partner')}
+                {formatProfileName(match.opponent_partner_profile, match.opponent_partner_name, 'Partner', nameDisplayMode)}
               </div>
             </div>
           </div>
@@ -174,7 +193,7 @@ export function ScoreboardTable({ headerColor, match, profile, displayName, sort
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-sm text-gray-900 truncate">
-              {match.opponent_profile ? `@${match.opponent_profile.username}` : match.opponent_name}
+              {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
             </div>
           </div>
           <div className="flex gap-0.5">

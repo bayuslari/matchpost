@@ -3,7 +3,7 @@ import type { TemplateProps } from '../types'
 import { ScoreboardTable } from '../components/ScoreboardTable'
 
 export const PhotoProTemplate = forwardRef<HTMLDivElement, TemplateProps>(
-  ({ match, profile, displayName, backgroundImage, hasCustomBg, formatDate, sortedSets }, ref) => (
+  ({ match, profile, displayName, nameDisplayMode, backgroundImage, hasCustomBg, formatDate, sortedSets }, ref) => (
     <div
       ref={ref}
       data-card
@@ -39,6 +39,7 @@ export const PhotoProTemplate = forwardRef<HTMLDivElement, TemplateProps>(
             match={match}
             profile={profile}
             displayName={displayName}
+            nameDisplayMode={nameDisplayMode}
             sortedSets={sortedSets}
           />
         </div>

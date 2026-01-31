@@ -1,9 +1,10 @@
 import { forwardRef } from 'react'
 import type { TemplateProps } from '../types'
+import { formatProfileName } from '../types'
 import { Avatar } from '../components/Avatar'
 
 export const NeonTemplate = forwardRef<HTMLDivElement, TemplateProps>(
-  ({ match, profile, displayName, backgroundImage, hasCustomBg, formatScore, formatShortDate, sortedSets }, ref) => {
+  ({ match, profile, displayName, nameDisplayMode, backgroundImage, hasCustomBg, formatScore, formatShortDate, sortedSets }, ref) => {
     const isDoubles = match.match_type === 'doubles'
 
     return (
@@ -72,7 +73,7 @@ export const NeonTemplate = forwardRef<HTMLDivElement, TemplateProps>(
                       <div className="space-y-0.5">
                         <div className="text-white font-bold truncate text-sm">{displayName}</div>
                         <div className="text-white font-bold truncate text-sm">
-                          {match.partner_profile ? `@${match.partner_profile.username}` : (match.partner_name || 'Partner')}
+                          {formatProfileName(match.partner_profile, match.partner_name, 'Partner', nameDisplayMode)}
                         </div>
                       </div>
                     ) : (
@@ -109,13 +110,17 @@ export const NeonTemplate = forwardRef<HTMLDivElement, TemplateProps>(
                     <div className="text-pink-400 text-xs font-mono uppercase">{isDoubles ? 'Team 2' : 'Player 2'}</div>
                     {isDoubles ? (
                       <div className="space-y-0.5">
-                        <div className="text-white font-bold truncate text-sm">{match.opponent_name}</div>
                         <div className="text-white font-bold truncate text-sm">
-                          {match.opponent_partner_profile ? `@${match.opponent_partner_profile.username}` : (match.opponent_partner_name || 'Partner')}
+                          {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
+                        </div>
+                        <div className="text-white font-bold truncate text-sm">
+                          {formatProfileName(match.opponent_partner_profile, match.opponent_partner_name, 'Partner', nameDisplayMode)}
                         </div>
                       </div>
                     ) : (
-                      <div className="text-white font-bold truncate text-sm">{match.opponent_name}</div>
+                      <div className="text-white font-bold truncate text-sm">
+                        {formatProfileName(match.opponent_profile, match.opponent_name, 'Opponent', nameDisplayMode)}
+                      </div>
                     )}
                   </div>
                   {isDoubles ? (

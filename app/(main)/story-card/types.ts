@@ -7,11 +7,14 @@ export type MatchWithSets = Match & {
   opponent_partner_profile?: Profile | null
 }
 
+export type NameDisplayMode = 'username' | 'fullname'
+
 export interface TemplateProps {
   match: MatchWithSets
   profile: Profile | null
   stats: { winRate: number; streak: number }
   displayName: string
+  nameDisplayMode: NameDisplayMode
   backgroundImage: string | null
   hasCustomBg: boolean
   cardRef: React.RefObject<HTMLDivElement>
@@ -19,6 +22,24 @@ export interface TemplateProps {
   formatDate: (dateStr: string) => string
   formatShortDate: (dateStr: string) => string
   sortedSets: MatchSet[]
+}
+
+// Helper function to format profile name based on display mode
+export function formatProfileName(
+  linkedProfile: Profile | null | undefined,
+  fallbackName: string | null | undefined,
+  defaultLabel: string,
+  nameDisplayMode: NameDisplayMode
+): string {
+  if (!linkedProfile) {
+    return fallbackName || defaultLabel
+  }
+
+  if (nameDisplayMode === 'username' && linkedProfile.username) {
+    return `@${linkedProfile.username}`
+  }
+
+  return linkedProfile.full_name || linkedProfile.username || fallbackName || defaultLabel
 }
 
 export const templates = [

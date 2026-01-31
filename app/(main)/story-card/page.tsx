@@ -330,6 +330,7 @@ function StoryCardContent() {
     profile,
     stats,
     displayName,
+    nameDisplayMode,
     backgroundImage,
     hasCustomBg: !!hasCustomBg,
     cardRef,
