@@ -335,24 +335,37 @@ function DashboardContent() {
                         </div>
                       )
                     ) : (
-                      // Shared view: show opponent names (creator's team from viewer's perspective)
+                      // Shared view: show opponents from viewer's perspective
                       <div className="font-semibold text-gray-800 dark:text-white">
-                        {match.match_type === 'doubles' ? (
-                          <>
+                        {isViewerOnOpponentSide(match) ? (
+                          // Viewer is on opponent side - show creator's team as their opponent
+                          match.match_type === 'doubles' ? (
+                            <>
+                              <div className="truncate">
+                                {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
+                              </div>
+                              <div className="truncate">
+                                {match.partner_name || 'Partner'}
+                              </div>
+                            </>
+                          ) : (
                             <div className="truncate">
                               {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
                             </div>
-                            <div className="truncate">
-                              {match.partner_name || 'Partner'}
-                            </div>
-                          </>
+                          )
                         ) : (
-                          <div className="truncate">
-                            {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
-                          </div>
+                          // Viewer is on partner side - show original opponents
+                          match.match_type === 'doubles' ? (
+                            <>
+                              <div className="truncate">{match.opponent_name}</div>
+                              <div className="truncate">{match.opponent_partner_name || 'Partner'}</div>
+                            </>
+                          ) : (
+                            <div className="truncate">{match.opponent_name}</div>
+                          )
                         )}
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'} shared this match
+                          {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'} recorded this match
                         </div>
                       </div>
                     )}
