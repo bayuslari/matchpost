@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { trackEvent } from '@/lib/analytics'
 import { useState } from 'react'
 import { ArrowLeft, Mail, Loader2 } from 'lucide-react'
 
@@ -17,6 +18,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)
+    trackEvent('login_click', { auth_method: 'google' })
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -59,12 +61,14 @@ export default function LoginPage() {
       return
     }
 
+    trackEvent('login_click', { auth_method: 'email' })
     setEmailSent(true)
     setIsLoading(false)
   }
 
   // For demo purposes - skip login
   const handleDemoLogin = () => {
+    trackEvent('guest_mode_start')
     router.push('/dashboard')
   }
 

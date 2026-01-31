@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Outfit } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
+import { GoogleAnalytics } from '@/components/GoogleAnalytics'
 import './globals.css'
 
 const outfit = Outfit({
@@ -44,6 +45,7 @@ export default function RootLayout({
           {children}
         </div>
         <Analytics />
+        <GoogleAnalytics />
       </body>
     </html>
   )

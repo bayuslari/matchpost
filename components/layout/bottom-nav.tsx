@@ -4,12 +4,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Users, BarChart3, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/analytics'
 
 const navItems = [
-  { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/groups', label: 'Groups', icon: Users },
-  { href: '/stats', label: 'Stats', icon: BarChart3 },
-  { href: '/profile', label: 'Profile', icon: User },
+  { href: '/dashboard', label: 'Home', icon: Home, event: 'nav_home' as const },
+  { href: '/groups', label: 'Groups', icon: Users, event: 'nav_groups' as const },
+  { href: '/stats', label: 'Stats', icon: BarChart3, event: 'nav_stats' as const },
+  { href: '/profile', label: 'Profile', icon: User, event: 'nav_profile' as const },
 ]
 
 export function BottomNav() {
@@ -25,6 +26,7 @@ export function BottomNav() {
           <Link
             key={item.href}
             href={item.href}
+            onClick={() => trackEvent(item.event)}
             className={cn(
               'flex flex-col items-center transition-colors',
               isActive ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-400 dark:text-gray-500'

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Plus, Minus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { trackEvent } from '@/lib/analytics'
 import UserSearchInput from '@/components/user-search-input'
 import LocationInput from '@/components/location-input'
 import type { Profile } from '@/lib/database.types'
@@ -107,6 +108,12 @@ export default function RecordMatchPage() {
         }
 
         sessionStorage.setItem('demoMatch', JSON.stringify(demoMatch))
+        trackEvent('record_match_complete', {
+          match_type: matchType,
+          match_result: result,
+          sets_count: validSets.length,
+          is_guest: true,
+        })
         router.push('/story-card?demo=true')
         return
       }
@@ -152,6 +159,18 @@ export default function RecordMatchPage() {
         console.error('Sets error:', setsError)
         // Match was created but sets failed - still navigate
       }
+
+      // Calculate result for tracking
+      const playerSetsWonForTracking = validSets.filter(s => parseInt(s.player) > parseInt(s.opponent)).length
+      const opponentSetsWonForTracking = validSets.filter(s => parseInt(s.opponent) > parseInt(s.player)).length
+      const resultForTracking = playerSetsWonForTracking > opponentSetsWonForTracking ? 'win' : playerSetsWonForTracking < opponentSetsWonForTracking ? 'loss' : 'draw'
+
+      trackEvent('record_match_complete', {
+        match_type: matchType,
+        match_result: resultForTracking,
+        sets_count: validSets.length,
+        is_guest: false,
+      })
 
       // Navigate to story card with match ID
       router.push(`/story-card?matchId=${matchData.id}`)

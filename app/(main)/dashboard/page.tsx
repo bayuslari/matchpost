@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
 import type { MatchSet } from '@/lib/database.types'
 
@@ -71,6 +72,12 @@ export default function DashboardPage() {
         .eq('id', deleteMatchId)
 
       if (!error) {
+        const deletedMatch = matches.find(m => m.id === deleteMatchId)
+        trackEvent('delete_match', {
+          match_type: deletedMatch?.match_type || undefined,
+          match_result: deletedMatch?.result || undefined,
+          source: 'dashboard',
+        })
         removeMatch(deleteMatchId)
       }
     } catch (err) {
@@ -204,6 +211,7 @@ export default function DashboardPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
           <Link
             href="/record"
+            onClick={() => trackEvent('new_match_click', { is_guest: isGuest })}
             className="flex items-center justify-center gap-3 bg-yellow-50 dark:bg-yellow-900/30 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 rounded-xl p-4 transition-all"
           >
             <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center text-gray-900">

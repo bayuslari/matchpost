@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Camera, Trash2, Download, Share2, Loader2, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { trackEvent } from '@/lib/analytics'
 import type { Profile } from '@/lib/database.types'
 import { templates, type MatchWithSets } from './types'
 import { ProTemplate } from './templates/ProTemplate'
@@ -167,6 +168,7 @@ function StoryCardContent() {
       const reader = new FileReader()
       reader.onloadend = () => {
         setBackgroundImage(reader.result as string)
+        trackEvent('upload_background', { template_id: selectedTemplate })
         // Switch to a template that supports images if current one doesn't
         const currentTemplate = templates.find(t => t.id === selectedTemplate)
         if (!currentTemplate?.supportsImage) {
@@ -179,6 +181,7 @@ function StoryCardContent() {
 
   const removeBackgroundImage = () => {
     setBackgroundImage(null)
+    trackEvent('remove_background')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -217,11 +220,25 @@ function StoryCardContent() {
             title: 'My Tennis Match',
             text: `I ${match?.result === 'win' ? 'won' : 'played'} ${formatScore()} against ${match?.opponent_name}! 🎾`,
           })
+          trackEvent('share_story', {
+            share_method: 'native',
+            template_id: selectedTemplate,
+            has_background: !!backgroundImage,
+            match_type: match?.match_type || undefined,
+            match_result: match?.result || undefined,
+          })
         } catch (err) {
           console.log('Share cancelled or failed:', err)
         }
       } else {
         downloadImage(blob)
+        trackEvent('share_story', {
+          share_method: 'download',
+          template_id: selectedTemplate,
+          has_background: !!backgroundImage,
+          match_type: match?.match_type || undefined,
+          match_result: match?.result || undefined,
+        })
       }
     } catch (err) {
       console.error('Failed to generate image:', err)
@@ -259,6 +276,13 @@ function StoryCardContent() {
     link.href = URL.createObjectURL(blob)
     link.click()
     URL.revokeObjectURL(link.href)
+
+    trackEvent('download_story', {
+      template_id: selectedTemplate,
+      has_background: !!backgroundImage,
+      match_type: match?.match_type || undefined,
+      match_result: match?.result || undefined,
+    })
   }
 
   const handleDelete = async () => {
@@ -283,6 +307,12 @@ function StoryCardContent() {
         setIsDeleting(false)
         return
       }
+
+      trackEvent('delete_match', {
+        match_type: match?.match_type || undefined,
+        match_result: match?.result || undefined,
+        source: 'story_card',
+      })
 
       router.push('/dashboard')
     } catch (err) {
@@ -489,7 +519,10 @@ function StoryCardContent() {
           {templates.map((template) => (
             <button
               key={template.id}
-              onClick={() => setSelectedTemplate(template.id)}
+              onClick={() => {
+                setSelectedTemplate(template.id)
+                trackEvent('select_template', { template_id: template.id, template_name: template.name })
+              }}
               className={`flex-shrink-0 w-20 h-28 rounded-xl overflow-hidden flex flex-col justify-between p-2 transition-all relative ${
                 selectedTemplate === template.id ? 'ring-2 ring-yellow-500 dark:ring-white ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-900' : ''
               } ${template.id === 'dark' ? 'border border-gray-300 dark:border-gray-700/50' : ''}`}
@@ -564,7 +597,10 @@ function StoryCardContent() {
           <div className="text-gray-700 dark:text-white text-sm mb-3">Display Name</div>
           <div className="flex gap-2">
             <button
-              onClick={() => setNameDisplayMode('fullname')}
+              onClick={() => {
+                setNameDisplayMode('fullname')
+                trackEvent('toggle_name_display', { name_display_mode: 'fullname' })
+              }}
               className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
                 nameDisplayMode === 'fullname'
                   ? 'bg-yellow-500 text-gray-900'
@@ -574,7 +610,10 @@ function StoryCardContent() {
               {profile.full_name || 'Full Name'}
             </button>
             <button
-              onClick={() => setNameDisplayMode('username')}
+              onClick={() => {
+                setNameDisplayMode('username')
+                trackEvent('toggle_name_display', { name_display_mode: 'username' })
+              }}
               className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
                 nameDisplayMode === 'username'
                   ? 'bg-yellow-500 text-gray-900'
@@ -604,7 +643,10 @@ function StoryCardContent() {
           Save to Gallery
         </button>
         <button
-          onClick={() => router.push('/dashboard?refresh=true')}
+          onClick={() => {
+            trackEvent('skip_story', { template_id: selectedTemplate })
+            router.push('/dashboard?refresh=true')
+          }}
           className="w-full text-gray-500 dark:text-gray-400 font-medium py-3 hover:text-gray-700 dark:hover:text-white transition-all"
         >
           Skip for now →
