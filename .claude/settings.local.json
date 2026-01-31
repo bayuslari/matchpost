@@ -17,7 +17,9 @@
       "Bash(find:*)",
       "Bash(pnpm add:*)",
       "Bash(git commit:*)",
-      "Bash(pnpm run build)"
+      "Bash(pnpm run build)",
+      "Bash(git -C /Users/bayuriyadi/Sites/matchpost log --oneline --all)",
+      "Bash(git -C /Users/bayuriyadi/Sites/matchpost show HEAD:.env.local)"
     ]
   }
 }

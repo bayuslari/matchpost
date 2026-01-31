@@ -376,7 +376,7 @@ function StoryCardContent() {
   }
 
   const handleDelete = async () => {
-    if (!matchId) return
+    if (!matchId || !isOwner) return // Security: only owner can delete
 
     setIsDeleting(true)
     try {
