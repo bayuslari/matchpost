@@ -2,6 +2,64 @@ import { create } from 'zustand'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
 
+const CACHE_KEY = 'matchpost_user_cache'
+const CACHE_VERSION = 1
+
+type CachedData = {
+  version: number
+  profile: Profile | null
+  matches: MatchWithSets[]
+  stats: UserState['stats']
+  timestamp: number
+}
+
+// Helper to save to localStorage
+function saveToCache(data: Omit<CachedData, 'version' | 'timestamp'>) {
+  if (typeof window === 'undefined') return
+  try {
+    const cached: CachedData = {
+      ...data,
+      version: CACHE_VERSION,
+      timestamp: Date.now(),
+    }
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cached))
+  } catch {
+    // localStorage might be full or disabled
+  }
+}
+
+// Helper to load from localStorage
+function loadFromCache(): Omit<CachedData, 'version' | 'timestamp'> | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const cached: CachedData = JSON.parse(raw)
+    // Check version compatibility
+    if (cached.version !== CACHE_VERSION) {
+      localStorage.removeItem(CACHE_KEY)
+      return null
+    }
+    return {
+      profile: cached.profile,
+      matches: cached.matches,
+      stats: cached.stats,
+    }
+  } catch {
+    return null
+  }
+}
+
+// Helper to clear cache
+function clearCache() {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(CACHE_KEY)
+  } catch {
+    // Ignore errors
+  }
+}
+
 type MatchWithSets = Match & {
   match_sets: MatchSet[]
   isOwner?: boolean  // true if current user created this match
@@ -83,13 +141,29 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
 
     // Set lock immediately (synchronous) before any async operations
-    set({ isLoading: true, isInitializing: true })
+    set({ isInitializing: true })
+
+    // Try to load from cache first for instant display
+    const cached = loadFromCache()
+    if (cached && cached.profile) {
+      set({
+        profile: cached.profile,
+        matches: cached.matches,
+        stats: cached.stats,
+        isGuest: false,
+        isLoading: false,  // Show cached data immediately
+      })
+    } else {
+      set({ isLoading: true })
+    }
+
     const supabase = createClient()
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
+        clearCache()
         set({ isGuest: true, isLoading: false, isInitialized: true, isInitializing: false })
         return
       }
@@ -156,6 +230,9 @@ export const useUserStore = create<UserState>((set, get) => ({
       })
       const stats = calculateStats(statsMatches)
 
+      // Save to cache for next visit
+      saveToCache({ profile: profileData, matches, stats })
+
       set({
         profile: profileData,
         matches,
@@ -185,6 +262,8 @@ export const useUserStore = create<UserState>((set, get) => ({
       .single()
 
     if (profileData) {
+      const { matches, stats } = get()
+      saveToCache({ profile: profileData, matches, stats })
       set({ profile: profileData })
     }
   },
@@ -234,6 +313,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     })
     const stats = calculateStats(statsMatches)
 
+    const { profile } = get()
+    saveToCache({ profile, matches, stats })
     set({ matches, stats })
   },
 
@@ -247,22 +328,25 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   // Add match locally
   addMatch: (match) => {
-    const { matches } = get()
+    const { matches, profile } = get()
     const newMatches = [match, ...matches]
     const stats = calculateStats(newMatches)
+    saveToCache({ profile, matches: newMatches, stats })
     set({ matches: newMatches, stats })
   },
 
   // Remove match locally
   removeMatch: (matchId) => {
-    const { matches } = get()
+    const { matches, profile } = get()
     const newMatches = matches.filter(m => m.id !== matchId)
     const stats = calculateStats(newMatches)
+    saveToCache({ profile, matches: newMatches, stats })
     set({ matches: newMatches, stats })
   },
 
   // Reset store (on logout)
   reset: () => {
+    clearCache()
     set({
       profile: null,
       matches: [],
