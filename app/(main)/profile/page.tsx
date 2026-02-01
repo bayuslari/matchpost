@@ -15,7 +15,8 @@ import {
   HelpCircle,
   LogOut,
   ChevronRight,
-  Pencil
+  Pencil,
+  ArrowLeft
 } from 'lucide-react'
 
 const menuItems = [
@@ -54,7 +55,10 @@ export default function ProfilePage() {
       <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
         {/* Header Skeleton */}
         <div className="bg-yellow-500 text-gray-900 px-6 pb-24 rounded-b-3xl header-safe-area">
-          <div className="h-7 w-16 bg-yellow-600/30 rounded animate-pulse mb-6"></div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 bg-yellow-600/30 rounded-full animate-pulse"></div>
+            <div className="h-7 w-20 bg-yellow-600/30 rounded animate-pulse"></div>
+          </div>
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-white/20 animate-pulse"></div>
             <div className="flex-1">
@@ -99,7 +103,17 @@ export default function ProfilePage() {
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
       {/* Header */}
       <div className="bg-yellow-500 text-gray-900 px-6 pb-24 rounded-b-3xl header-safe-area">
-        <h1 className="text-xl font-bold mb-6">Profile</h1>
+        <div className="flex items-center gap-3 mb-6">
+          {profile?.username && (
+            <Link
+              href={`/profile/${profile.username}`}
+              className="p-2 -ml-2 hover:bg-yellow-400/50 rounded-full transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          )}
+          <h1 className="text-xl font-bold">Account</h1>
+        </div>
 
         {/* Profile Info */}
         <div className="flex items-center gap-4">

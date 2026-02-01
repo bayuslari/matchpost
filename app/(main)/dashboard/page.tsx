@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState, Suspense, useMemo } from 'react'
+import { useEffect, useState, Suspense, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Share2 } from 'lucide-react'
+import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Share2, Link2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
@@ -47,6 +47,113 @@ function formatDate(dateStr: string) {
   if (diffDays === 1) return 'Yesterday'
   if (diffDays < 7) return `${diffDays} days ago`
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+}
+
+// Swipeable Match Card Component
+interface SwipeableMatchCardProps {
+  children: React.ReactNode
+  isOwner: boolean
+  onDelete: () => void
+  onShare: () => void
+}
+
+function SwipeableMatchCard({ children, isOwner, onDelete, onShare }: SwipeableMatchCardProps) {
+  const [swipeOffset, setSwipeOffset] = useState(0)
+  const [isSwiping, setIsSwiping] = useState(false)
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  const SWIPE_THRESHOLD = 80
+  const MAX_SWIPE = 100
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+    setIsSwiping(true)
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isSwiping) return
+
+    const deltaX = e.touches[0].clientX - touchStartX.current
+    const deltaY = e.touches[0].clientY - touchStartY.current
+
+    // If scrolling vertically, don't swipe
+    if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 10) {
+      setIsSwiping(false)
+      setSwipeOffset(0)
+      return
+    }
+
+    // Clamp swipe between -MAX_SWIPE and MAX_SWIPE
+    // Only allow left swipe (delete) for owners, right swipe (share) for all
+    let clampedOffset = deltaX
+    if (!isOwner && deltaX < 0) {
+      clampedOffset = 0 // Non-owners can't swipe left (delete)
+    }
+    clampedOffset = Math.max(-MAX_SWIPE, Math.min(MAX_SWIPE, clampedOffset))
+    setSwipeOffset(clampedOffset)
+  }, [isSwiping, isOwner])
+
+  const handleTouchEnd = useCallback(() => {
+    setIsSwiping(false)
+
+    if (swipeOffset < -SWIPE_THRESHOLD && isOwner) {
+      // Swiped left - delete
+      onDelete()
+    } else if (swipeOffset > SWIPE_THRESHOLD) {
+      // Swiped right - share
+      onShare()
+    }
+
+    // Reset position
+    setSwipeOffset(0)
+  }, [swipeOffset, isOwner, onDelete, onShare])
+
+  return (
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Background actions */}
+      <div className="absolute inset-0 flex">
+        {/* Share action (left side, revealed on right swipe) */}
+        <div
+          className={`flex items-center justify-start pl-4 bg-blue-500 transition-opacity ${
+            swipeOffset > 20 ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ width: Math.max(0, swipeOffset) }}
+        >
+          <Share2 className="w-5 h-5 text-white" />
+        </div>
+        <div className="flex-1" />
+        {/* Delete action (right side, revealed on left swipe) */}
+        {isOwner && (
+          <div
+            className={`flex items-center justify-end pr-4 bg-red-500 transition-opacity ${
+              swipeOffset < -20 ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{ width: Math.max(0, -swipeOffset) }}
+          >
+            <Trash2 className="w-5 h-5 text-white" />
+          </div>
+        )}
+      </div>
+
+      {/* Card content */}
+      <div
+        ref={cardRef}
+        className="relative bg-white dark:bg-gray-800 shadow-sm transition-transform"
+        style={{
+          transform: `translateX(${swipeOffset}px)`,
+          transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {children}
+      </div>
+    </div>
+  )
 }
 
 // Skeleton component to prevent CLS during loading
@@ -106,6 +213,8 @@ function DashboardContent() {
   const [deleteMatchId, setDeleteMatchId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [displayLimit, setDisplayLimit] = useState(10)
+  const [matchTypeFilter, setMatchTypeFilter] = useState<'all' | 'singles' | 'doubles'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const supabase = useMemo(() => createClient(), [])
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -123,9 +232,30 @@ function DashboardContent() {
     }
   }, [searchParams, refreshMatches, router])
 
+  // Filter matches by type and search query
+  const filteredMatches = useMemo(() => {
+    return matches.filter(match => {
+      // Filter by match type
+      if (matchTypeFilter !== 'all' && match.match_type !== matchTypeFilter) {
+        return false
+      }
+      // Filter by search query (opponent name)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase()
+        const opponentName = match.opponent_name?.toLowerCase() || ''
+        const opponentPartnerName = match.opponent_partner_name?.toLowerCase() || ''
+        const creatorName = match.creatorProfile?.full_name?.toLowerCase() || match.creatorProfile?.username?.toLowerCase() || ''
+        if (!opponentName.includes(query) && !opponentPartnerName.includes(query) && !creatorName.includes(query)) {
+          return false
+        }
+      }
+      return true
+    })
+  }, [matches, matchTypeFilter, searchQuery])
+
   // Pre-compute match display data to avoid inline calculations
   const matchDisplayData = useMemo(() => {
-    return matches.slice(0, displayLimit).map(match => {
+    return filteredMatches.slice(0, displayLimit).map(match => {
       const onOpponentSide = !match.isOwner && profile?.id &&
         (match.opponent_user_id === profile.id || match.opponent_partner_user_id === profile.id)
       const viewerResult = match.isOwner ? match.result :
@@ -142,9 +272,36 @@ function DashboardContent() {
         resultText: viewerResult === 'win' ? 'WIN' : viewerResult === 'loss' ? 'LOSS' : 'DRAW',
       }
     })
-  }, [matches, displayLimit, profile?.id])
+  }, [filteredMatches, displayLimit, profile?.id])
 
   const displayName = isGuest ? 'Guest' : (profile?.full_name || profile?.username || 'Player')
+
+  const handleShare = async (matchId: string) => {
+    const url = `${window.location.origin}/story-card?matchId=${matchId}`
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Match Result',
+          text: 'Check out my tennis match!',
+          url,
+        })
+        trackEvent('share_story', { source: 'dashboard_swipe' })
+      } catch (err) {
+        // User cancelled or error
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Share failed:', err)
+        }
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(url)
+        trackEvent('share_story', { source: 'dashboard_swipe' })
+      } catch (err) {
+        console.error('Copy failed:', err)
+      }
+    }
+  }
 
   const handleDelete = async () => {
     if (!deleteMatchId) return
@@ -265,21 +422,38 @@ function DashboardContent() {
           )}
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
-            <div className="text-3xl font-bold">{stats.totalMatches}</div>
-            <div className="text-xs text-yellow-800">Matches</div>
+        {/* Stats Cards - Clickable to view profile */}
+        {!isGuest && profile?.username ? (
+          <Link href={`/profile/${profile.username}`} className="grid grid-cols-3 gap-3 group">
+            <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center group-hover:bg-white/30 transition-all">
+              <div className="text-3xl font-bold">{stats.totalMatches}</div>
+              <div className="text-xs text-yellow-800">Matches</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center group-hover:bg-white/30 transition-all">
+              <div className="text-3xl font-bold">{stats.winRate}%</div>
+              <div className="text-xs text-yellow-800">Win Rate</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center group-hover:bg-white/30 transition-all">
+              <div className="text-3xl font-bold">{stats.streak > 0 ? `🔥${stats.streak}` : '0'}</div>
+              <div className="text-xs text-yellow-800">Streak</div>
+            </div>
+          </Link>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
+              <div className="text-3xl font-bold">{stats.totalMatches}</div>
+              <div className="text-xs text-yellow-800">Matches</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
+              <div className="text-3xl font-bold">{stats.winRate}%</div>
+              <div className="text-xs text-yellow-800">Win Rate</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
+              <div className="text-3xl font-bold">{stats.streak > 0 ? `🔥${stats.streak}` : '0'}</div>
+              <div className="text-xs text-yellow-800">Streak</div>
+            </div>
           </div>
-          <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
-            <div className="text-3xl font-bold">{stats.winRate}%</div>
-            <div className="text-xs text-yellow-800">Win Rate</div>
-          </div>
-          <div className="bg-white/20 backdrop-blur rounded-2xl p-4 text-center">
-            <div className="text-3xl font-bold">{stats.streak > 0 ? `🔥${stats.streak}` : '0'}</div>
-            <div className="text-xs text-yellow-800">Streak</div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -343,33 +517,134 @@ function DashboardContent() {
 
       {/* Recent Matches */}
       <div className="px-6 mt-6 pb-24">
-        <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-          {isGuest ? 'Your Matches' : 'Recent Matches'}
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+            {isGuest ? 'Your Matches' : 'Recent Matches'}
+          </h2>
+          {!isGuest && profile?.username && (
+            <Link
+              href={`/profile/${profile.username}`}
+              className="text-sm text-yellow-600 dark:text-yellow-400 font-medium hover:underline"
+            >
+              View Profile →
+            </Link>
+          )}
+        </div>
+
+        {/* Search and Filter */}
+        {matches.length > 0 && (
+          <div className="mb-4 space-y-3">
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search by opponent name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+              />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Match Type Filter Tabs */}
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                {(['all', 'singles', 'doubles'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      setMatchTypeFilter(type)
+                      setDisplayLimit(10)
+                    }}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      matchTypeFilter === type
+                        ? 'bg-yellow-500 text-gray-900'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {type === 'all' ? 'All' : type === 'singles' ? 'Singles' : 'Doubles'}
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">
+                Swipe cards to share/delete
+              </span>
+            </div>
+          </div>
+        )}
+
         {matches.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-sm text-center">
-            <div className="text-4xl mb-3">🎾</div>
-            <p className="text-gray-500 dark:text-gray-400">
-              {isGuest ? 'No demo matches yet' : 'No matches yet'}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm text-center">
+            <div className="w-24 h-24 mx-auto mb-4 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+              <svg className="w-12 h-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                <path strokeLinecap="round" strokeWidth="2" d="M8 12c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4" />
+                <path strokeLinecap="round" strokeWidth="2" d="M12 8v8M8 12h8" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">
+              {isGuest ? 'Ready to Play?' : 'Start Your Journey'}
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4 max-w-xs mx-auto">
+              {isGuest
+                ? 'Record a demo match and create shareable story cards'
+                : 'Record your first match and track your tennis progress'}
             </p>
             <Link
               href="/record"
-              className="text-yellow-600 dark:text-yellow-400 font-semibold mt-2 inline-block hover:underline"
+              className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-6 py-3 rounded-xl transition-all"
             >
-              {isGuest ? 'Try recording a demo match →' : 'Record your first match →'}
+              <Plus className="w-5 h-5" />
+              {isGuest ? 'Try Demo Match' : 'Record First Match'}
             </Link>
+          </div>
+        ) : filteredMatches.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">No matches found</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              {searchQuery ? `No matches with "${searchQuery}"` : `No ${matchTypeFilter} matches yet`}
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setMatchTypeFilter('all')
+              }}
+              className="text-yellow-600 dark:text-yellow-400 font-semibold hover:underline"
+            >
+              Clear filters
+            </button>
           </div>
         ) : (
           <div className="space-y-3">
             {matchDisplayData.map((match) => (
-              <div
+              <SwipeableMatchCard
                 key={match.id}
-                className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-all"
+                isOwner={match.isOwner ?? false}
+                onDelete={() => setDeleteMatchId(match.id)}
+                onShare={() => handleShare(match.id)}
               >
-                <Link
-                  href={`/story-card?matchId=${match.id}`}
-                  className="flex items-center gap-3 flex-1 min-w-0"
-                >
+                <div className="p-4 flex items-center justify-between">
+                  <Link
+                    href={`/story-card?matchId=${match.id}`}
+                    className="flex items-center gap-3 flex-1 min-w-0"
+                  >
                   <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${match.resultBarColor}`}></div>
                   <div className="min-w-0 flex-1">
                     {match.isOwner ? (
@@ -432,18 +707,34 @@ function DashboardContent() {
                     )}
                     {!match.isOwner && (
                       <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        Shared by {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'}
+                        Recorded by {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'}
                       </div>
                     )}
                     <div className="flex items-center gap-2 flex-wrap mt-1">
                       <span className="text-sm text-gray-500 dark:text-gray-400">{match.formattedDate}</span>
+                      {match.match_type === 'doubles' && match.isOwner && (match.partner_name || match.partnerProfile) && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[100px]">
+                          w/{' '}
+                          {match.partnerProfile?.username ? (
+                            <Link
+                              href={`/profile/${match.partnerProfile.username}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="hover:text-yellow-600 dark:hover:text-yellow-400 hover:underline"
+                            >
+                              {match.partnerProfile.full_name || match.partnerProfile.username}
+                            </Link>
+                          ) : (
+                            match.partnerProfile?.full_name || match.partner_name
+                          )}
+                        </span>
+                      )}
                       {match.match_type === 'doubles' && (
                         <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded flex-shrink-0">
                           2v2
                         </span>
                       )}
                       {!match.isOwner && (
-                        <Share2 className="w-3 h-3 text-blue-500 dark:text-blue-400" />
+                        <Link2 className="w-3 h-3 text-blue-500 dark:text-blue-400" />
                       )}
                     </div>
                   </div>
@@ -457,23 +748,28 @@ function DashboardContent() {
                   </Link>
                   {match.isOwner && (
                     <button
-                      onClick={() => setDeleteMatchId(match.id)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setDeleteMatchId(match.id)
+                      }}
                       className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>
-              </div>
+                </div>
+              </SwipeableMatchCard>
             ))}
 
             {/* Load More Button */}
-            {matches.length > displayLimit && (
+            {filteredMatches.length > displayLimit && (
               <button
                 onClick={() => setDisplayLimit(prev => prev + 10)}
                 className="w-full py-3 text-center text-yellow-600 dark:text-yellow-400 font-medium hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-xl transition-all"
               >
-                Load more ({matches.length - displayLimit} remaining)
+                Load more ({filteredMatches.length - displayLimit} remaining)
               </button>
             )}
           </div>
