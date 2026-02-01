@@ -22,7 +22,7 @@ export function BottomNav() {
   ]
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 px-6 py-3 flex justify-around max-w-xl mx-auto">
+    <div className="sticky bottom-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 px-6 py-3 flex justify-around">
       {navItems.map((item) => {
         // For profile, check if on any profile page
         const isActive = item.isProfile
