@@ -6,6 +6,9 @@ type MatchWithSets = Match & {
   match_sets: MatchSet[]
   isOwner?: boolean  // true if current user created this match
   creatorProfile?: Profile | null  // profile of match creator (for shared matches)
+  opponentProfile?: Profile | null  // profile of opponent (if linked)
+  partnerProfile?: Profile | null  // profile of partner (if linked)
+  opponentPartnerProfile?: Profile | null  // profile of opponent's partner (if linked)
 }
 
 type MonthlyData = {
@@ -106,15 +109,25 @@ export const useUserStore = create<UserState>((set, get) => ({
       // Fetch matches where user is involved (creator, opponent, or partner)
       const { data: matchesData } = await supabase
         .from('matches')
-        .select('*, match_sets(*), creator:profiles!matches_user_id_fkey(*)')
+        .select(`
+          *,
+          match_sets(*),
+          creator:profiles!matches_user_id_fkey(*),
+          opponent:profiles!matches_opponent_user_id_fkey(*),
+          partner:profiles!matches_partner_user_id_fkey(*),
+          opponent_partner:profiles!matches_opponent_partner_user_id_fkey(*)
+        `)
         .or(`user_id.eq.${user.id},opponent_user_id.eq.${user.id},partner_user_id.eq.${user.id},opponent_partner_user_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
 
-      // Add isOwner flag and creatorProfile to each match
+      // Add isOwner flag and profiles to each match
       const matches = (matchesData || []).map(match => ({
         ...match,
         isOwner: match.user_id === user.id,
         creatorProfile: match.creator as Profile | null,
+        opponentProfile: match.opponent as Profile | null,
+        partnerProfile: match.partner as Profile | null,
+        opponentPartnerProfile: match.opponent_partner as Profile | null,
       })) as MatchWithSets[]
 
       // Calculate stats for all matches (with result flipped for opponent-side shared matches)
@@ -174,7 +187,14 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     const { data: matchesData } = await supabase
       .from('matches')
-      .select('*, match_sets(*), creator:profiles!matches_user_id_fkey(*)')
+      .select(`
+        *,
+        match_sets(*),
+        creator:profiles!matches_user_id_fkey(*),
+        opponent:profiles!matches_opponent_user_id_fkey(*),
+        partner:profiles!matches_partner_user_id_fkey(*),
+        opponent_partner:profiles!matches_opponent_partner_user_id_fkey(*)
+      `)
       .or(`user_id.eq.${user.id},opponent_user_id.eq.${user.id},partner_user_id.eq.${user.id},opponent_partner_user_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
 
@@ -182,6 +202,9 @@ export const useUserStore = create<UserState>((set, get) => ({
       ...match,
       isOwner: match.user_id === user.id,
       creatorProfile: match.creator as Profile | null,
+      opponentProfile: match.opponent as Profile | null,
+      partnerProfile: match.partner as Profile | null,
+      opponentPartnerProfile: match.opponent_partner as Profile | null,
     })) as MatchWithSets[]
 
     // Calculate stats for all matches (with result flipped for opponent-side shared matches)

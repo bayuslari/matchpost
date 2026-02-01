@@ -8,7 +8,7 @@ import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Share2 } from 'lucide
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
-import type { MatchSet } from '@/lib/database.types'
+import type { MatchSet, Profile } from '@/lib/database.types'
 
 // Format score from sets (with optional flip for viewer's perspective)
 function formatScore(matchSets: MatchSet[], flipScore: boolean = false) {
@@ -19,6 +19,22 @@ function formatScore(matchSets: MatchSet[], flipScore: boolean = false) {
       ? `${s.opponent_score}-${s.player_score}`
       : `${s.player_score}-${s.opponent_score}`)
     .join(', ')
+}
+
+// Helper component to render player name with optional profile link
+function PlayerName({ name, profile, className = '' }: { name: string; profile?: Profile | null; className?: string }) {
+  if (profile?.username) {
+    return (
+      <Link
+        href={`/profile/${profile.username}`}
+        onClick={(e) => e.stopPropagation()}
+        className={`hover:text-yellow-600 dark:hover:text-yellow-400 hover:underline ${className}`}
+      >
+        {profile.full_name || profile.username || name}
+      </Link>
+    )
+  }
+  return <span className={className}>{name}</span>
 }
 
 // Format date - moved outside to avoid recreation
@@ -360,12 +376,16 @@ function DashboardContent() {
                       // Owner view: show opponent names
                       match.match_type === 'doubles' ? (
                         <div className="font-semibold text-gray-800 dark:text-white">
-                          <div className="truncate">{match.opponent_name}</div>
-                          <div className="truncate">{match.opponent_partner_name || 'Partner'}</div>
+                          <div className="truncate">
+                            <PlayerName name={match.opponent_name} profile={match.opponentProfile} />
+                          </div>
+                          <div className="truncate">
+                            <PlayerName name={match.opponent_partner_name || 'Partner'} profile={match.opponentPartnerProfile} />
+                          </div>
                         </div>
                       ) : (
                         <div className="font-semibold text-gray-800 dark:text-white truncate">
-                          {match.opponent_name}
+                          <PlayerName name={match.opponent_name} profile={match.opponentProfile} />
                         </div>
                       )
                     ) : (
@@ -375,27 +395,37 @@ function DashboardContent() {
                         match.match_type === 'doubles' ? (
                           <div className="font-semibold text-gray-800 dark:text-white">
                             <div className="truncate">
-                              {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
+                              <PlayerName
+                                name={match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
+                                profile={match.creatorProfile}
+                              />
                             </div>
                             <div className="truncate">
-                              {match.partner_name || 'Partner'}
+                              <PlayerName name={match.partner_name || 'Partner'} profile={match.partnerProfile} />
                             </div>
                           </div>
                         ) : (
                           <div className="font-semibold text-gray-800 dark:text-white truncate">
-                            {match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
+                            <PlayerName
+                              name={match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'}
+                              profile={match.creatorProfile}
+                            />
                           </div>
                         )
                       ) : (
                         // Viewer is on partner side - show original opponents
                         match.match_type === 'doubles' ? (
                           <div className="font-semibold text-gray-800 dark:text-white">
-                            <div className="truncate">{match.opponent_name}</div>
-                            <div className="truncate">{match.opponent_partner_name || 'Partner'}</div>
+                            <div className="truncate">
+                              <PlayerName name={match.opponent_name} profile={match.opponentProfile} />
+                            </div>
+                            <div className="truncate">
+                              <PlayerName name={match.opponent_partner_name || 'Partner'} profile={match.opponentPartnerProfile} />
+                            </div>
                           </div>
                         ) : (
                           <div className="font-semibold text-gray-800 dark:text-white truncate">
-                            {match.opponent_name}
+                            <PlayerName name={match.opponent_name} profile={match.opponentProfile} />
                           </div>
                         )
                       )

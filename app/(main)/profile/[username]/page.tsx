@@ -5,11 +5,14 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, MapPin, Trophy, User } from 'lucide-react'
+import { ArrowLeft, MapPin, Trophy, User, Swords } from 'lucide-react'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
 
 type MatchWithSets = Match & {
   match_sets: MatchSet[]
+  creatorProfile?: Profile | null
+  viewerResult?: 'win' | 'loss' | 'draw' | null  // Result from profile owner's perspective
+  isProfileOwnerMatch?: boolean  // true if profile owner created this match
 }
 
 interface UserStats {
@@ -19,6 +22,13 @@ interface UserStats {
   winRate: number
 }
 
+interface HeadToHeadStats {
+  totalMatches: number
+  viewerWins: number
+  profileWins: number
+  draws: number
+}
+
 export default function PublicProfilePage() {
   const params = useParams()
   const router = useRouter()
@@ -26,11 +36,15 @@ export default function PublicProfilePage() {
   const supabase = useMemo(() => createClient(), [])
 
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; profile: Profile | null } | null>(null)
   const [stats, setStats] = useState<UserStats>({ totalMatches: 0, wins: 0, losses: 0, winRate: 0 })
+  const [h2hStats, setH2hStats] = useState<HeadToHeadStats | null>(null)
   const [recentMatches, setRecentMatches] = useState<MatchWithSets[]>([])
+  const [mutualMatches, setMutualMatches] = useState<MatchWithSets[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
+  const [activeTab, setActiveTab] = useState<'recent' | 'mutual'>('recent')
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -38,6 +52,18 @@ export default function PublicProfilePage() {
 
       // Check if viewing own profile
       const { data: { user } } = await supabase.auth.getUser()
+
+      // Fetch current user's profile if logged in
+      let currentUserProfile: Profile | null = null
+      if (user) {
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+        currentUserProfile = userProfile
+        setCurrentUser({ id: user.id, profile: userProfile })
+      }
 
       // Fetch profile by username
       const { data: profileData, error } = await supabase
@@ -55,22 +81,41 @@ export default function PublicProfilePage() {
       setProfile(profileData)
       setIsOwnProfile(user?.id === profileData.id)
 
-      // Fetch public matches
-      const { data: matches } = await supabase
+      // Fetch ALL matches where profile owner is involved (as creator, opponent, or partner)
+      const { data: allMatches } = await supabase
         .from('matches')
-        .select('*, match_sets(*)')
-        .eq('user_id', profileData.id)
+        .select('*, match_sets(*), creator:profiles!matches_user_id_fkey(*)')
+        .or(`user_id.eq.${profileData.id},opponent_user_id.eq.${profileData.id},partner_user_id.eq.${profileData.id},opponent_partner_user_id.eq.${profileData.id}`)
         .eq('is_public', true)
         .order('played_at', { ascending: false })
-        .limit(10)
 
-      if (matches) {
-        setRecentMatches(matches)
+      if (allMatches) {
+        // Process matches to determine result from profile owner's perspective
+        const processedMatches = allMatches.map(match => {
+          const isProfileOwnerMatch = match.user_id === profileData.id
+          const isOnOpponentSide = match.opponent_user_id === profileData.id ||
+                                   match.opponent_partner_user_id === profileData.id
 
-        // Calculate stats from public matches
-        const wins = matches.filter(m => m.result === 'win').length
-        const losses = matches.filter(m => m.result === 'loss').length
-        const total = matches.length
+          // Determine result from profile owner's perspective
+          let viewerResult = match.result
+          if (!isProfileOwnerMatch && isOnOpponentSide) {
+            // Flip result if profile owner is on opponent side
+            if (match.result === 'win') viewerResult = 'loss'
+            else if (match.result === 'loss') viewerResult = 'win'
+          }
+
+          return {
+            ...match,
+            creatorProfile: match.creator as Profile | null,
+            viewerResult,
+            isProfileOwnerMatch
+          }
+        }) as MatchWithSets[]
+
+        // Calculate stats
+        const wins = processedMatches.filter(m => m.viewerResult === 'win').length
+        const losses = processedMatches.filter(m => m.viewerResult === 'loss').length
+        const total = processedMatches.length
 
         setStats({
           totalMatches: total,
@@ -78,6 +123,80 @@ export default function PublicProfilePage() {
           losses,
           winRate: total > 0 ? Math.round((wins / total) * 100) : 0
         })
+
+        // Set recent matches (limit to 10)
+        setRecentMatches(processedMatches.slice(0, 10))
+
+        // Find mutual matches with current user (if logged in and not own profile)
+        if (user && user.id !== profileData.id) {
+          const mutual = processedMatches.filter(match => {
+            // Check if current user is involved in this match
+            return match.user_id === user.id ||
+                   match.opponent_user_id === user.id ||
+                   match.partner_user_id === user.id ||
+                   match.opponent_partner_user_id === user.id
+          })
+
+          setMutualMatches(mutual)
+
+          // Calculate head-to-head stats
+          if (mutual.length > 0) {
+            let viewerWins = 0
+            let profileWins = 0
+            let draws = 0
+
+            mutual.forEach(match => {
+              // Determine if viewer and profile owner are on the same team
+              const profileIsCreator = match.user_id === profileData.id
+              const viewerIsCreator = match.user_id === user.id
+              const profileOnOpponentSide = match.opponent_user_id === profileData.id ||
+                                           match.opponent_partner_user_id === profileData.id
+              const viewerOnOpponentSide = match.opponent_user_id === user.id ||
+                                          match.opponent_partner_user_id === user.id
+
+              // If they're on the same side (both creator side or both opponent side), skip
+              const profileOnCreatorSide = profileIsCreator ||
+                                          match.partner_user_id === profileData.id
+              const viewerOnCreatorSide = viewerIsCreator ||
+                                         match.partner_user_id === user.id
+
+              if ((profileOnCreatorSide && viewerOnCreatorSide) ||
+                  (profileOnOpponentSide && viewerOnOpponentSide)) {
+                // They were teammates, don't count in H2H
+                return
+              }
+
+              // They were opponents
+              if (match.result === 'draw') {
+                draws++
+              } else if (match.result === 'win') {
+                // Match creator won
+                if (viewerOnCreatorSide) {
+                  viewerWins++
+                } else {
+                  profileWins++
+                }
+              } else if (match.result === 'loss') {
+                // Match creator lost
+                if (viewerOnCreatorSide) {
+                  profileWins++
+                } else {
+                  viewerWins++
+                }
+              }
+            })
+
+            const h2hTotal = viewerWins + profileWins + draws
+            if (h2hTotal > 0) {
+              setH2hStats({
+                totalMatches: h2hTotal,
+                viewerWins,
+                profileWins,
+                draws
+              })
+            }
+          }
+        }
       }
 
       setIsLoading(false)
@@ -88,9 +207,12 @@ export default function PublicProfilePage() {
     }
   }, [username, supabase])
 
-  const formatScore = (sets: MatchSet[]) => {
+  const formatScore = (sets: MatchSet[], flip: boolean = false) => {
     const sorted = [...sets].sort((a, b) => a.set_number - b.set_number)
-    return sorted.map(s => `${s.player_score}-${s.opponent_score}`).join(', ')
+    return sorted.map(s => flip
+      ? `${s.opponent_score}-${s.player_score}`
+      : `${s.player_score}-${s.opponent_score}`
+    ).join(', ')
   }
 
   const formatDate = (dateStr: string) => {
@@ -109,6 +231,85 @@ export default function PublicProfilePage() {
       case 'pro': return 'Pro'
       default: return null
     }
+  }
+
+  const renderMatchCard = (match: MatchWithSets) => {
+    // Determine the opponent display from profile owner's perspective
+    const isProfileOwnerMatch = match.isProfileOwnerMatch
+    const profileOnOpponentSide = match.opponent_user_id === profile?.id ||
+                                  match.opponent_partner_user_id === profile?.id
+
+    let opponentDisplay: string
+    let partnerDisplay: string | null = null
+    let flipScore = false
+
+    if (isProfileOwnerMatch) {
+      // Profile owner created this match, show opponent
+      opponentDisplay = match.opponent_name
+      if (match.match_type === 'doubles') {
+        partnerDisplay = match.partner_name
+      }
+    } else if (profileOnOpponentSide) {
+      // Profile owner was on opponent side, flip perspective
+      opponentDisplay = match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'
+      if (match.match_type === 'doubles') {
+        partnerDisplay = match.opponent_partner_user_id === profile?.id
+          ? match.opponent_name
+          : match.opponent_partner_name
+      }
+      flipScore = true
+    } else {
+      // Profile owner was partner
+      opponentDisplay = match.opponent_name
+      if (match.match_type === 'doubles') {
+        partnerDisplay = match.creatorProfile?.full_name || match.creatorProfile?.username || 'Unknown'
+      }
+    }
+
+    return (
+      <div
+        key={match.id}
+        className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm"
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+            match.viewerResult === 'win'
+              ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+              : match.viewerResult === 'loss'
+              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
+          }`}>
+            {match.viewerResult === 'win' ? 'WIN' : match.viewerResult === 'loss' ? 'LOSS' : 'DRAW'}
+          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {formatDate(match.played_at)}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="text-sm">
+            <span className="text-gray-900 dark:text-white font-medium">
+              vs {opponentDisplay}
+            </span>
+            {match.match_type === 'doubles' && partnerDisplay && (
+              <span className="text-gray-500 dark:text-gray-400 text-xs ml-1">
+                (with {partnerDisplay})
+              </span>
+            )}
+          </div>
+          <div className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300">
+            {formatScore(match.match_sets, flipScore)}
+          </div>
+        </div>
+
+        {match.location && (
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {match.location}
+          </div>
+        )}
+      </div>
+    )
   }
 
   if (isLoading) {
@@ -167,6 +368,7 @@ export default function PublicProfilePage() {
 
   const displayName = profile?.full_name || profile?.username || 'Player'
   const skillLevel = skillLevelLabel(profile?.skill_level || null)
+  const viewerName = currentUser?.profile?.full_name || currentUser?.profile?.username || 'You'
 
   return (
     <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 pb-24">
@@ -249,6 +451,37 @@ export default function PublicProfilePage() {
         </div>
       </div>
 
+      {/* Head-to-Head Card */}
+      {h2hStats && !isOwnProfile && (
+        <div className="px-6 mt-4">
+          <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl p-4 shadow-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <Swords className="w-5 h-5 text-white" />
+              <h3 className="text-white font-bold">Head-to-Head</h3>
+            </div>
+            <div className="flex items-center justify-between text-white">
+              <div className="text-center flex-1">
+                <div className="text-3xl font-bold">{h2hStats.viewerWins}</div>
+                <div className="text-xs text-white/80">{viewerName}</div>
+              </div>
+              <div className="text-center px-4">
+                <div className="text-lg font-bold text-white/60">vs</div>
+                <div className="text-xs text-white/60">{h2hStats.totalMatches} matches</div>
+              </div>
+              <div className="text-center flex-1">
+                <div className="text-3xl font-bold">{h2hStats.profileWins}</div>
+                <div className="text-xs text-white/80">{profile?.full_name?.split(' ')[0] || profile?.username}</div>
+              </div>
+            </div>
+            {h2hStats.draws > 0 && (
+              <div className="text-center mt-2 text-xs text-white/60">
+                {h2hStats.draws} draw{h2hStats.draws > 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Own profile redirect hint */}
       {isOwnProfile && (
         <div className="px-6 mt-4">
@@ -261,61 +494,60 @@ export default function PublicProfilePage() {
         </div>
       )}
 
-      {/* Recent Matches */}
+      {/* Matches Section */}
       <div className="px-6 mt-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Recent Matches</h3>
-
-        {recentMatches.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
-            <p className="text-gray-500 dark:text-gray-400">No public matches yet</p>
+        {/* Tab Header - only show if there are mutual matches */}
+        {mutualMatches.length > 0 && !isOwnProfile && (
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setActiveTab('recent')}
+              className={`flex-1 py-2 px-4 rounded-xl font-medium text-sm transition-colors ${
+                activeTab === 'recent'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              Recent ({recentMatches.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('mutual')}
+              className={`flex-1 py-2 px-4 rounded-xl font-medium text-sm transition-colors ${
+                activeTab === 'mutual'
+                  ? 'bg-yellow-500 text-gray-900'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              With You ({mutualMatches.length})
+            </button>
           </div>
+        )}
+
+        {/* Section Title - only show if no tabs */}
+        {(mutualMatches.length === 0 || isOwnProfile) && (
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Recent Matches</h3>
+        )}
+
+        {/* Match List */}
+        {activeTab === 'recent' ? (
+          recentMatches.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
+              <p className="text-gray-500 dark:text-gray-400">No public matches yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentMatches.map(renderMatchCard)}
+            </div>
+          )
         ) : (
-          <div className="space-y-2">
-            {recentMatches.map((match) => (
-              <div
-                key={match.id}
-                className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    match.result === 'win'
-                      ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                      : match.result === 'loss'
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
-                  }`}>
-                    {match.result === 'win' ? 'WIN' : match.result === 'loss' ? 'LOSS' : 'DRAW'}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {formatDate(match.played_at)}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="text-sm">
-                    <span className="text-gray-900 dark:text-white font-medium">
-                      vs {match.opponent_name}
-                    </span>
-                    {match.match_type === 'doubles' && match.partner_name && (
-                      <span className="text-gray-500 dark:text-gray-400 text-xs ml-1">
-                        (with {match.partner_name})
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300">
-                    {formatScore(match.match_sets)}
-                  </div>
-                </div>
-
-                {match.location && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    {match.location}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          mutualMatches.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
+              <p className="text-gray-500 dark:text-gray-400">No matches together yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {mutualMatches.map(renderMatchCard)}
+            </div>
+          )
         )}
       </div>
     </div>
