@@ -21,7 +21,7 @@ export default function CreateGroupPage() {
       rankingReset,
     }
     console.log('Group data:', groupData)
-    router.push('/groups')
+    router.push('/community')
   }
 
   return (
@@ -29,7 +29,7 @@ export default function CreateGroupPage() {
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-4">
         <Link
-          href="/groups"
+          href="/community"
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-800 dark:text-white"
         >
           <ArrowLeft className="w-5 h-5" />

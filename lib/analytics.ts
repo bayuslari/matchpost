@@ -34,7 +34,7 @@ type EventName =
   | 'guest_mode_start'
   // Navigation events
   | 'nav_home'
-  | 'nav_groups'
+  | 'nav_community'
   | 'nav_stats'
   | 'nav_profile'
   // Profile events

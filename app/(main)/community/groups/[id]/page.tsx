@@ -33,7 +33,7 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
       <div className="bg-yellow-500 text-gray-900 px-6 pb-20 header-safe-area">
         <div className="flex items-center justify-between mb-4">
           <Link
-            href="/groups"
+            href="/community"
             className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />

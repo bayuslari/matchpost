@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 // Demo data - will be replaced with Supabase data
 const myGroups = [
@@ -15,37 +15,28 @@ const discoverGroups = [
   { id: '5', name: 'Beginners Welcome', members: 89 },
 ]
 
-export default function GroupsPage() {
+export function GroupsTab() {
   return (
-    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard"
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-800 dark:text-white"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">Groups</h1>
-        </div>
+    <div className="pb-24">
+      {/* Create Button */}
+      <div className="p-4 pb-0">
         <Link
-          href="/groups/create"
-          className="bg-yellow-500 text-gray-900 px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1 hover:bg-yellow-600 transition-all"
+          href="/community/groups/create"
+          className="w-full bg-yellow-500 text-gray-900 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 hover:bg-yellow-600 transition-all"
         >
           <Plus className="w-4 h-4" />
-          Create
+          Create New Group
         </Link>
       </div>
 
       {/* My Groups */}
-      <div className="p-6">
+      <div className="p-4">
         <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">MY GROUPS</h2>
         <div className="space-y-3">
           {myGroups.map((group) => (
             <Link
               key={group.id}
-              href={`/groups/${group.id}`}
+              href={`/community/groups/${group.id}`}
               className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-all block"
             >
               <div className="flex items-center gap-3">
@@ -67,7 +58,7 @@ export default function GroupsPage() {
       </div>
 
       {/* Discover Groups */}
-      <div className="px-6 pb-24">
+      <div className="px-4">
         <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">DISCOVER</h2>
         <div className="grid grid-cols-2 gap-3">
           {discoverGroups.map((group) => (

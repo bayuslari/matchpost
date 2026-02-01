@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 // Whitelist of allowed redirect paths to prevent open redirect attacks
-const ALLOWED_REDIRECTS = ['/dashboard', '/profile', '/record', '/stats', '/groups']
+const ALLOWED_REDIRECTS = ['/dashboard', '/profile', '/record', '/stats', '/community']
 
 function getSafeRedirectPath(next: string | null): string {
   if (!next) return '/dashboard'

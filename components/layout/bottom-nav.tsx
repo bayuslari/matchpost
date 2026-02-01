@@ -16,7 +16,7 @@ export function BottomNav() {
 
   const navItems = [
     { href: '/dashboard', label: 'Home', icon: Home, event: 'nav_home' as const, disabled: false },
-    { href: '/groups', label: 'Groups', icon: Users, event: 'nav_groups' as const, disabled: true },
+    { href: '/community', label: 'Community', icon: Users, event: 'nav_community' as const, disabled: false },
     { href: '/stats', label: 'Stats', icon: BarChart3, event: 'nav_stats' as const, disabled: false },
     { href: profileHref, label: 'Profile', icon: User, event: 'nav_profile' as const, disabled: false, isProfile: true },
   ]
