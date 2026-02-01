@@ -24,6 +24,7 @@ interface UserState {
   isGuest: boolean
   isLoading: boolean
   isInitialized: boolean
+  isInitializing: boolean  // Lock to prevent duplicate initialize calls
 
   // Computed
   stats: {
@@ -63,24 +64,33 @@ export const useUserStore = create<UserState>((set, get) => ({
   isGuest: false,
   isLoading: true,
   isInitialized: false,
+  isInitializing: false,
   stats: initialStats,
 
   // Initialize user data (call once on app load)
   initialize: async () => {
-    const { isInitialized } = get()
+    const { isInitialized, isInitializing } = get()
+
+    // Already initialized - just ensure loading is false
     if (isInitialized) {
       set({ isLoading: false })
       return
     }
 
-    set({ isLoading: true })
+    // Already initializing - prevent duplicate calls
+    if (isInitializing) {
+      return
+    }
+
+    // Set lock immediately (synchronous) before any async operations
+    set({ isLoading: true, isInitializing: true })
     const supabase = createClient()
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        set({ isGuest: true, isLoading: false, isInitialized: true })
+        set({ isGuest: true, isLoading: false, isInitialized: true, isInitializing: false })
         return
       }
 
@@ -153,10 +163,11 @@ export const useUserStore = create<UserState>((set, get) => ({
         isGuest: false,
         isLoading: false,
         isInitialized: true,
+        isInitializing: false,
       })
     } catch (error) {
       console.error('Failed to initialize user:', error)
-      set({ isLoading: false, isInitialized: true })
+      set({ isLoading: false, isInitialized: true, isInitializing: false })
     }
   },
 
@@ -258,6 +269,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       isGuest: false,
       isLoading: false,
       isInitialized: false,
+      isInitializing: false,
       stats: initialStats,
     })
   },
