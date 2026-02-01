@@ -48,9 +48,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
-      <body className="h-full font-outfit bg-yellow-500 md:bg-gray-50 md:dark:bg-gray-900">
-        <div className="max-w-md mx-auto min-h-full bg-gray-50 dark:bg-gray-900">
-          {children}
+      <body className="h-full font-outfit bg-yellow-500">
+        <div className="bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-xl mx-auto min-h-full bg-gray-50 dark:bg-gray-900">
+            {children}
+          </div>
         </div>
         <Analytics />
         <SpeedInsights />
