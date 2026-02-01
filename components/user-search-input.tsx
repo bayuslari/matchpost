@@ -255,7 +255,23 @@ export default function UserSearchInput({
       {/* Selected user indicator */}
       {selectedUser && (
         <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 flex items-center gap-1">
-          <span>✓</span> {isGuestMode ? 'Demo player' : `Linked to @${selectedUser.username}`}
+          <span>✓</span>{' '}
+          {isGuestMode ? (
+            'Demo player'
+          ) : selectedUser.username ? (
+            <>
+              Linked to{' '}
+              <a
+                href={`/profile/${selectedUser.username}`}
+                onClick={(e) => e.stopPropagation()}
+                className="font-medium hover:underline"
+              >
+                @{selectedUser.username}
+              </a>
+            </>
+          ) : (
+            `Linked to ${selectedUser.full_name || 'player'}`
+          )}
         </p>
       )}
 
