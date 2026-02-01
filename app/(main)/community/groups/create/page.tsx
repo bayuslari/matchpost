@@ -3,25 +3,97 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Globe, Lock } from 'lucide-react'
+import { ArrowLeft, Globe, Lock, Users, LogIn } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useUserStore } from '@/lib/stores/user-store'
 
 export default function CreateGroupPage() {
   const router = useRouter()
+  const { profile } = useUserStore()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [icon, setIcon] = useState('🎾')
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public')
-  const [rankingReset, setRankingReset] = useState('monthly')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = () => {
-    // TODO: Save to Supabase
-    const groupData = {
-      name,
-      description,
-      privacy,
-      rankingReset,
+  const handleSubmit = async () => {
+    if (!profile) {
+      setError('You must be logged in to create a group')
+      return
     }
-    console.log('Group data:', groupData)
-    router.push('/community')
+
+    setLoading(true)
+    setError(null)
+
+    const supabase = createClient()
+
+    // Create the group
+    const { data: group, error: groupError } = await supabase
+      .from('groups')
+      .insert({
+        name,
+        description: description || null,
+        icon,
+        is_public: privacy === 'public',
+        created_by: profile.id,
+      })
+      .select()
+      .single()
+
+    if (groupError) {
+      setError(groupError.message)
+      setLoading(false)
+      return
+    }
+
+    // Add creator as admin member (trigger should do this, but just in case)
+    await supabase
+      .from('group_members')
+      .upsert({
+        group_id: group.id,
+        user_id: profile.id,
+        role: 'admin',
+      })
+
+    setLoading(false)
+    router.push(`/community/groups/${group.id}`)
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-800 p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-4">
+          <Link
+            href="/community"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-800 dark:text-white"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-xl font-bold text-gray-800 dark:text-white">Create Group</h1>
+        </div>
+
+        <div className="flex items-center justify-center p-6" style={{ minHeight: 'calc(100dvh - 120px)' }}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center max-w-sm w-full">
+            <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Create Your Group</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              Login to create a group and start connecting with other tennis players in your community.
+            </p>
+            <Link
+              href="/login?next=/community/groups/create"
+              className="w-full btn-primary inline-flex items-center justify-center gap-2"
+            >
+              <LogIn className="w-4 h-4" />
+              Login to Continue
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -38,10 +110,17 @@ export default function CreateGroupPage() {
       </div>
 
       <div className="p-6 space-y-6">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
         {/* Group Icon */}
         <div className="flex justify-center">
           <button className="w-24 h-24 bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 border-dashed border-yellow-300 dark:border-yellow-700 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all">
-            <span className="text-3xl">🎾</span>
+            <span className="text-3xl">{icon}</span>
             <span className="text-xs text-yellow-600 dark:text-yellow-400">Change</span>
           </button>
         </div>
@@ -75,6 +154,7 @@ export default function CreateGroupPage() {
           <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Privacy</label>
           <div className="grid grid-cols-2 gap-3">
             <button
+              type="button"
               onClick={() => setPrivacy('public')}
               className={`py-4 px-4 font-semibold rounded-xl flex flex-col items-center gap-1 transition-all ${
                 privacy === 'public'
@@ -89,6 +169,7 @@ export default function CreateGroupPage() {
               </span>
             </button>
             <button
+              type="button"
               onClick={() => setPrivacy('private')}
               className={`py-4 px-4 font-semibold rounded-xl flex flex-col items-center gap-1 transition-all ${
                 privacy === 'private'
@@ -105,28 +186,13 @@ export default function CreateGroupPage() {
           </div>
         </div>
 
-        {/* Season Settings */}
-        <div>
-          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Ranking Reset</label>
-          <select
-            value={rankingReset}
-            onChange={(e) => setRankingReset(e.target.value)}
-            className="input"
-          >
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="yearly">Yearly</option>
-            <option value="never">Never</option>
-          </select>
-        </div>
-
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          disabled={!name}
+          disabled={!name || loading}
           className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Create Group
+          {loading ? 'Creating...' : 'Create Group'}
         </button>
       </div>
     </div>

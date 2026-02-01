@@ -61,6 +61,7 @@ export type Database = {
           result: 'win' | 'loss' | 'draw' | null
           notes: string | null
           is_public: boolean
+          group_id: string | null
           created_at: string
           updated_at: string
         }
@@ -79,6 +80,7 @@ export type Database = {
           result?: 'win' | 'loss' | 'draw' | null
           notes?: string | null
           is_public?: boolean
+          group_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -97,6 +99,7 @@ export type Database = {
           result?: 'win' | 'loss' | 'draw' | null
           notes?: string | null
           is_public?: boolean
+          group_id?: string | null
           created_at?: string
           updated_at?: string
         }

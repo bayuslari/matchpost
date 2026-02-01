@@ -1,30 +1,162 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Settings, Plus } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
+import { ArrowLeft, Settings, Plus, Users, LogOut } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useUserStore } from '@/lib/stores/user-store'
+import { Group, Profile } from '@/lib/database.types'
 
-// Demo data
-const topPlayers = [
-  { rank: 1, name: 'Alex P. (You)', points: 580, isYou: true },
-  { rank: 2, name: 'Mike S.', points: 420 },
-  { rank: 3, name: 'John D.', points: 380 },
-]
+type GroupMemberWithProfile = {
+  id: string
+  user_id: string
+  role: 'admin' | 'moderator' | 'member'
+  joined_at: string
+  profiles: Profile
+}
 
-const otherPlayers = [
-  { rank: 4, name: 'Sarah K.', points: 340, badge: '🥇' },
-  { rank: 5, name: 'David R.', points: 290, badge: '🥈' },
-  { rank: 6, name: 'Lisa M.', points: 250, badge: '🥈' },
-  { rank: 7, name: 'Tom W.', points: 180, badge: '🥉' },
-]
+export default function GroupDetailPage() {
+  const params = useParams()
+  const router = useRouter()
+  const { profile } = useUserStore()
+  const groupId = params.id as string
 
-export default function GroupDetailPage({ params }: { params: { id: string } }) {
-  // In real app, fetch group data using params.id
-  const group = {
-    id: params.id,
-    name: 'Weekend Warriors',
-    members: 12,
-    privacy: 'Public',
-    icon: '⚔️',
+  const [group, setGroup] = useState<Group | null>(null)
+  const [members, setMembers] = useState<GroupMemberWithProfile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'members' | 'matches'>('members')
+  const [isMember, setIsMember] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    const fetchGroup = async () => {
+      setLoading(true)
+      const supabase = createClient()
+
+      // Fetch group details
+      const { data: groupData } = await supabase
+        .from('groups')
+        .select('*')
+        .eq('id', groupId)
+        .single()
+
+      if (groupData) {
+        setGroup(groupData)
+      }
+
+      // Fetch members with profiles
+      const { data: membersData } = await supabase
+        .from('group_members')
+        .select(`
+          id,
+          user_id,
+          role,
+          joined_at,
+          profiles (
+            id,
+            username,
+            full_name,
+            avatar_url,
+            skill_level
+          )
+        `)
+        .eq('group_id', groupId)
+        .order('joined_at', { ascending: true })
+
+      if (membersData) {
+        setMembers(membersData as unknown as GroupMemberWithProfile[])
+
+        // Check if current user is a member
+        if (profile) {
+          const userMembership = membersData.find(m => m.user_id === profile.id)
+          setIsMember(!!userMembership)
+          setIsAdmin(userMembership?.role === 'admin')
+        }
+      }
+
+      setLoading(false)
+    }
+
+    fetchGroup()
+  }, [groupId, profile])
+
+  const handleJoin = async () => {
+    if (!profile) return
+
+    const supabase = createClient()
+    await supabase
+      .from('group_members')
+      .insert({
+        group_id: groupId,
+        user_id: profile.id,
+        role: 'member',
+      })
+
+    setIsMember(true)
+    // Refetch members
+    const { data: membersData } = await supabase
+      .from('group_members')
+      .select(`
+        id,
+        user_id,
+        role,
+        joined_at,
+        profiles (
+          id,
+          username,
+          full_name,
+          avatar_url,
+          skill_level
+        )
+      `)
+      .eq('group_id', groupId)
+      .order('joined_at', { ascending: true })
+
+    if (membersData) {
+      setMembers(membersData as unknown as GroupMemberWithProfile[])
+    }
+  }
+
+  const handleLeave = async () => {
+    if (!profile || isAdmin) return
+
+    const supabase = createClient()
+    await supabase
+      .from('group_members')
+      .delete()
+      .eq('group_id', groupId)
+      .eq('user_id', profile.id)
+
+    setIsMember(false)
+    router.push('/community')
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
+        <div className="bg-yellow-500 h-40 animate-pulse" />
+        <div className="px-6 -mt-10">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 animate-pulse">
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!group) {
+    return (
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Group not found</p>
+          <Link href="/community" className="btn-primary">
+            Back to Community
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -38,9 +170,11 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <button className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-all">
-            <Settings className="w-5 h-5" />
-          </button>
+          {isAdmin && (
+            <button className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-all">
+              <Settings className="w-5 h-5" />
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl">
@@ -48,101 +182,120 @@ export default function GroupDetailPage({ params }: { params: { id: string } }) 
           </div>
           <div>
             <h1 className="text-2xl font-bold">{group.name}</h1>
-            <p className="text-yellow-800">{group.members} members • {group.privacy}</p>
+            <p className="text-yellow-800">{members.length} members • {group.is_public ? 'Public' : 'Private'}</p>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Content Card */}
       <div className="px-6 -mt-10">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+          {/* Tabs */}
           <div className="flex border-b border-gray-100 dark:border-gray-700">
-            <button className="flex-1 py-4 text-center font-semibold text-yellow-600 dark:text-yellow-400 border-b-2 border-yellow-500">
-              Leaderboard
-            </button>
-            <button className="flex-1 py-4 text-center font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
-              Matches
-            </button>
-            <button className="flex-1 py-4 text-center font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
+            <button
+              onClick={() => setActiveTab('members')}
+              className={`flex-1 py-4 text-center font-semibold transition-all ${
+                activeTab === 'members'
+                  ? 'text-yellow-600 dark:text-yellow-400 border-b-2 border-yellow-500'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
               Members
+            </button>
+            <button
+              onClick={() => setActiveTab('matches')}
+              className={`flex-1 py-4 text-center font-semibold transition-all ${
+                activeTab === 'matches'
+                  ? 'text-yellow-600 dark:text-yellow-400 border-b-2 border-yellow-500'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+              }`}
+            >
+              Matches
             </button>
           </div>
 
-          {/* Leaderboard */}
+          {/* Tab Content */}
           <div className="p-4">
-            {/* Top 3 Podium */}
-            <div className="flex justify-center items-end gap-4 mb-6 pt-4">
-              {/* 2nd Place */}
-              <div className="text-center">
-                <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-2 flex items-center justify-center text-xl">
-                  👤
-                </div>
-                <div className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-bold px-2 py-1 rounded-full mb-1">
-                  🥈 2nd
-                </div>
-                <div className="text-sm font-semibold text-gray-800 dark:text-white">{topPlayers[1].name}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">{topPlayers[1].points} pts</div>
-              </div>
-
-              {/* 1st Place */}
-              <div className="text-center -mt-4">
-                <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl ring-4 ring-yellow-400">
-                  👤
-                </div>
-                <div className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full mb-1">
-                  🥇 1st
-                </div>
-                <div className="text-sm font-bold text-gray-800 dark:text-white">{topPlayers[0].name}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">{topPlayers[0].points} pts</div>
-              </div>
-
-              {/* 3rd Place */}
-              <div className="text-center">
-                <div className="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-full mx-auto mb-2 flex items-center justify-center text-xl">
-                  👤
-                </div>
-                <div className="bg-orange-200 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 text-xs font-bold px-2 py-1 rounded-full mb-1">
-                  🥉 3rd
-                </div>
-                <div className="text-sm font-semibold text-gray-800 dark:text-white">{topPlayers[2].name}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">{topPlayers[2].points} pts</div>
-              </div>
-            </div>
-
-            {/* Rest of Leaderboard */}
-            <div className="space-y-2">
-              {otherPlayers.map((player) => (
-                <div
-                  key={player.rank}
-                  className="flex items-center justify-between py-3 px-4 bg-gray-50 dark:bg-gray-900 rounded-xl"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 text-center font-bold text-gray-400 dark:text-gray-500">{player.rank}</span>
-                    <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                      👤
+            {activeTab === 'members' ? (
+              <div className="space-y-3">
+                {members.map((member) => (
+                  <Link
+                    key={member.id}
+                    href={member.profiles.username ? `/profile/${member.profiles.username}` : '#'}
+                    className="flex items-center gap-3 py-2"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center overflow-hidden">
+                      {member.profiles.avatar_url ? (
+                        <img
+                          src={member.profiles.avatar_url}
+                          alt={member.profiles.full_name || ''}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm font-bold text-gray-900">
+                          {(member.profiles.full_name || member.profiles.username || '?')[0].toUpperCase()}
+                        </span>
+                      )}
                     </div>
-                    <span className="font-medium text-gray-800 dark:text-white">{player.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{player.badge}</span>
-                    <span className="font-semibold text-gray-600 dark:text-gray-300">{player.points} pts</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800 dark:text-white">
+                        {member.profiles.full_name || member.profiles.username}
+                      </div>
+                      {member.profiles.username && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">@{member.profiles.username}</div>
+                      )}
+                    </div>
+                    {member.role === 'admin' && (
+                      <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded-full">
+                        Admin
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <p className="text-sm">No matches recorded in this group yet</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Record Match in Group */}
-      <div className="px-6 mt-6">
-        <Link
-          href="/record"
-          className="w-full btn-primary flex items-center justify-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Record Match in This Group
-        </Link>
+      {/* Action Buttons */}
+      <div className="px-6 mt-6 space-y-3">
+        {isMember ? (
+          <>
+            <Link
+              href={`/record?group=${groupId}`}
+              className="w-full btn-primary flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Record Match in This Group
+            </Link>
+            {!isAdmin && (
+              <button
+                onClick={handleLeave}
+                className="w-full py-3 text-red-600 dark:text-red-400 font-medium flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Leave Group
+              </button>
+            )}
+          </>
+        ) : profile ? (
+          <button
+            onClick={handleJoin}
+            className="w-full btn-primary flex items-center justify-center gap-2"
+          >
+            <Users className="w-5 h-5" />
+            Join This Group
+          </button>
+        ) : (
+          <Link href="/login" className="w-full btn-primary flex items-center justify-center gap-2">
+            Login to Join
+          </Link>
+        )}
       </div>
     </div>
   )

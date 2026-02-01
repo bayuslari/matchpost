@@ -3,12 +3,12 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Plus, Minus } from 'lucide-react'
+import { ArrowLeft, Loader2, Plus, Minus, Users, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import UserSearchInput from '@/components/user-search-input'
 import LocationInput from '@/components/location-input'
-import type { Profile } from '@/lib/database.types'
+import type { Profile, Group } from '@/lib/database.types'
 
 function RecordMatchContent() {
   const router = useRouter()
@@ -17,8 +17,11 @@ function RecordMatchContent() {
 
   // Edit mode
   const matchId = searchParams.get('matchId')
+  const groupIdParam = searchParams.get('group')
   const isEditMode = searchParams.get('edit') === 'true' && !!matchId
   const [isLoadingMatch, setIsLoadingMatch] = useState(isEditMode)
+  const [userGroups, setUserGroups] = useState<Group[]>([])
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(groupIdParam)
   const [isGuestMode, setIsGuestMode] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [matchType, setMatchType] = useState<'singles' | 'doubles'>('singles')
@@ -52,6 +55,28 @@ function RecordMatchContent() {
       const { data: { user } } = await supabase.auth.getUser()
       setIsGuestMode(!user)
       setCurrentUserId(user?.id || null)
+
+      // Fetch user's groups
+      if (user) {
+        const { data: memberGroups } = await supabase
+          .from('group_members')
+          .select(`
+            group_id,
+            groups (
+              id,
+              name,
+              icon
+            )
+          `)
+          .eq('user_id', user.id)
+
+        if (memberGroups) {
+          const groups = memberGroups
+            .map(m => m.groups as unknown as Group)
+            .filter((g): g is Group => g !== null)
+          setUserGroups(groups)
+        }
+      }
 
       // Fetch recent players from match history
       if (user) {
@@ -105,6 +130,7 @@ function RecordMatchContent() {
           setOpponent(matchData.opponent_name)
           setLocation(matchData.location || '')
           setDate(matchData.played_at.split('T')[0])
+          setSelectedGroupId(matchData.group_id || null)
 
           if (matchData.match_type === 'doubles') {
             setPartner(matchData.partner_name || '')
@@ -254,6 +280,7 @@ function RecordMatchContent() {
             location: location.trim() || null,
             played_at: date,
             result: resultForTracking,
+            group_id: selectedGroupId,
           })
           .eq('id', matchId)
 
@@ -308,6 +335,7 @@ function RecordMatchContent() {
             opponent_partner_user_id: matchType === 'doubles' ? opponent2User?.id || null : null,
             location: location.trim() || null,
             played_at: date,
+            group_id: selectedGroupId,
           })
           .select()
           .single()
@@ -545,6 +573,33 @@ function RecordMatchContent() {
             className="input"
           />
         </div>
+
+        {/* Group (optional) */}
+        {!isGuestMode && userGroups.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+              Group <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <div className="relative">
+              <select
+                value={selectedGroupId || ''}
+                onChange={(e) => setSelectedGroupId(e.target.value || null)}
+                className="input appearance-none pr-10"
+              >
+                <option value="">No group</option>
+                {userGroups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.icon} {group.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+              Link this match to a group you&apos;re in
+            </p>
+          </div>
+        )}
 
         {/* Submit */}
         <button
