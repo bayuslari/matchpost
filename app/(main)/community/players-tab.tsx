@@ -29,34 +29,56 @@ const skillLevelColor = (level: string | null) => {
   }
 }
 
+const PAGE_SIZE = 20
+
 export function PlayersTab() {
   const [players, setPlayers] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [skillFilter, setSkillFilter] = useState<SkillFilter>('all')
 
-  useEffect(() => {
-    const fetchPlayers = async () => {
+  const fetchPlayers = async (offset = 0, append = false) => {
+    if (offset === 0) {
       setLoading(true)
-      const supabase = createClient()
-
-      let query = supabase
-        .from('profiles')
-        .select('*')
-        .not('username', 'is', null)
-        .order('updated_at', { ascending: false })
-        .limit(50)
-
-      if (skillFilter !== 'all') {
-        query = query.eq('skill_level', skillFilter)
-      }
-
-      const { data } = await query
-      setPlayers(data || [])
-      setLoading(false)
+    } else {
+      setLoadingMore(true)
     }
 
-    fetchPlayers()
+    const supabase = createClient()
+
+    let query = supabase
+      .from('profiles')
+      .select('*')
+      .not('username', 'is', null)
+      .order('updated_at', { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1)
+
+    if (skillFilter !== 'all') {
+      query = query.eq('skill_level', skillFilter)
+    }
+
+    const { data } = await query
+    const newPlayers = data || []
+
+    if (append) {
+      setPlayers(prev => [...prev, ...newPlayers])
+    } else {
+      setPlayers(newPlayers)
+    }
+
+    setHasMore(newPlayers.length === PAGE_SIZE)
+    setLoading(false)
+    setLoadingMore(false)
+  }
+
+  useEffect(() => {
+    fetchPlayers(0, false)
   }, [skillFilter])
+
+  const handleLoadMore = () => {
+    fetchPlayers(players.length, true)
+  }
 
   return (
     <div className="p-4">
@@ -106,7 +128,7 @@ export function PlayersTab() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 pb-20">
           {players.map((player) => (
             <Link
               key={player.id}
@@ -156,6 +178,17 @@ export function PlayersTab() {
               )}
             </Link>
           ))}
+
+          {/* Load More Button */}
+          {hasMore && (
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full py-3 text-sm font-medium text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-xl transition-all disabled:opacity-50"
+            >
+              {loadingMore ? 'Loading...' : 'Load More'}
+            </button>
+          )}
         </div>
       )}
     </div>
