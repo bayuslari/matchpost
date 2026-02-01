@@ -124,6 +124,7 @@ export default function ProfilePage() {
                 alt={displayName}
                 width={80}
                 height={80}
+                priority
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none'

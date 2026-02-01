@@ -754,6 +754,7 @@ export default function PublicProfilePage() {
                 alt={displayName}
                 width={80}
                 height={80}
+                priority
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -942,7 +943,7 @@ export default function PublicProfilePage() {
                         <div className="flex items-center gap-2 min-w-0">
                           <div className="w-7 h-7 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
                             {opponent.avatarUrl ? (
-                              <Image src={opponent.avatarUrl} alt="" width={28} height={28} className="w-full h-full object-cover" />
+                              <Image src={opponent.avatarUrl} alt="" width={28} height={28} loading="lazy" className="w-full h-full object-cover" />
                             ) : (
                               <User className="w-3.5 h-3.5 text-gray-400" />
                             )}
@@ -977,7 +978,7 @@ export default function PublicProfilePage() {
                         <div className="flex items-center gap-2 min-w-0">
                           <div className="w-7 h-7 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
                             {partner.avatarUrl ? (
-                              <Image src={partner.avatarUrl} alt="" width={28} height={28} className="w-full h-full object-cover" />
+                              <Image src={partner.avatarUrl} alt="" width={28} height={28} loading="lazy" className="w-full h-full object-cover" />
                             ) : (
                               <User className="w-3.5 h-3.5 text-gray-400" />
                             )}

@@ -274,6 +274,7 @@ function DashboardContent() {
                   alt={displayName}
                   width={48}
                   height={48}
+                  priority
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none'
