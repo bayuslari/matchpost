@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState, Suspense, useMemo, useRef, useCallback } from 'react'
+import { useEffect, useState, Suspense, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Share2, Link2 } from 'lucide-react'
+import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Link2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
@@ -47,113 +47,6 @@ function formatDate(dateStr: string) {
   if (diffDays === 1) return 'Yesterday'
   if (diffDays < 7) return `${diffDays} days ago`
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-}
-
-// Swipeable Match Card Component
-interface SwipeableMatchCardProps {
-  children: React.ReactNode
-  isOwner: boolean
-  onDelete: () => void
-  onShare: () => void
-}
-
-function SwipeableMatchCard({ children, isOwner, onDelete, onShare }: SwipeableMatchCardProps) {
-  const [swipeOffset, setSwipeOffset] = useState(0)
-  const [isSwiping, setIsSwiping] = useState(false)
-  const touchStartX = useRef(0)
-  const touchStartY = useRef(0)
-  const cardRef = useRef<HTMLDivElement>(null)
-
-  const SWIPE_THRESHOLD = 80
-  const MAX_SWIPE = 100
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX
-    touchStartY.current = e.touches[0].clientY
-    setIsSwiping(true)
-  }, [])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isSwiping) return
-
-    const deltaX = e.touches[0].clientX - touchStartX.current
-    const deltaY = e.touches[0].clientY - touchStartY.current
-
-    // If scrolling vertically, don't swipe
-    if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 10) {
-      setIsSwiping(false)
-      setSwipeOffset(0)
-      return
-    }
-
-    // Clamp swipe between -MAX_SWIPE and MAX_SWIPE
-    // Only allow left swipe (delete) for owners, right swipe (share) for all
-    let clampedOffset = deltaX
-    if (!isOwner && deltaX < 0) {
-      clampedOffset = 0 // Non-owners can't swipe left (delete)
-    }
-    clampedOffset = Math.max(-MAX_SWIPE, Math.min(MAX_SWIPE, clampedOffset))
-    setSwipeOffset(clampedOffset)
-  }, [isSwiping, isOwner])
-
-  const handleTouchEnd = useCallback(() => {
-    setIsSwiping(false)
-
-    if (swipeOffset < -SWIPE_THRESHOLD && isOwner) {
-      // Swiped left - delete
-      onDelete()
-    } else if (swipeOffset > SWIPE_THRESHOLD) {
-      // Swiped right - share
-      onShare()
-    }
-
-    // Reset position
-    setSwipeOffset(0)
-  }, [swipeOffset, isOwner, onDelete, onShare])
-
-  return (
-    <div className="relative overflow-hidden rounded-xl">
-      {/* Background actions */}
-      <div className="absolute inset-0 flex">
-        {/* Share action (left side, revealed on right swipe) */}
-        <div
-          className={`flex items-center justify-start pl-4 bg-blue-500 transition-opacity ${
-            swipeOffset > 20 ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{ width: Math.max(0, swipeOffset) }}
-        >
-          <Share2 className="w-5 h-5 text-white" />
-        </div>
-        <div className="flex-1" />
-        {/* Delete action (right side, revealed on left swipe) */}
-        {isOwner && (
-          <div
-            className={`flex items-center justify-end pr-4 bg-red-500 transition-opacity ${
-              swipeOffset < -20 ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{ width: Math.max(0, -swipeOffset) }}
-          >
-            <Trash2 className="w-5 h-5 text-white" />
-          </div>
-        )}
-      </div>
-
-      {/* Card content */}
-      <div
-        ref={cardRef}
-        className="relative bg-white dark:bg-gray-800 shadow-sm transition-transform"
-        style={{
-          transform: `translateX(${swipeOffset}px)`,
-          transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {children}
-      </div>
-    </div>
-  )
 }
 
 // Skeleton component to prevent CLS during loading
@@ -275,33 +168,6 @@ function DashboardContent() {
   }, [filteredMatches, displayLimit, profile?.id])
 
   const displayName = isGuest ? 'Guest' : (profile?.full_name || profile?.username || 'Player')
-
-  const handleShare = async (matchId: string) => {
-    const url = `${window.location.origin}/story-card?matchId=${matchId}`
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Match Result',
-          text: 'Check out my tennis match!',
-          url,
-        })
-        trackEvent('share_story', { source: 'dashboard_swipe' })
-      } catch (err) {
-        // User cancelled or error
-        if ((err as Error).name !== 'AbortError') {
-          console.error('Share failed:', err)
-        }
-      }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(url)
-        trackEvent('share_story', { source: 'dashboard_swipe' })
-      } catch (err) {
-        console.error('Copy failed:', err)
-      }
-    }
-  }
 
   const handleDelete = async () => {
     if (!deleteMatchId) return
@@ -578,9 +444,6 @@ function DashboardContent() {
                   </button>
                 ))}
               </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">
-                Swipe cards to share/delete
-              </span>
             </div>
           </div>
         )}
@@ -634,17 +497,14 @@ function DashboardContent() {
         ) : (
           <div className="space-y-3">
             {matchDisplayData.map((match) => (
-              <SwipeableMatchCard
+              <div
                 key={match.id}
-                isOwner={match.isOwner ?? false}
-                onDelete={() => setDeleteMatchId(match.id)}
-                onShare={() => handleShare(match.id)}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center justify-between"
               >
-                <div className="p-4 flex items-center justify-between">
-                  <Link
-                    href={`/story-card?matchId=${match.id}`}
-                    className="flex items-center gap-3 flex-1 min-w-0"
-                  >
+                <Link
+                  href={`/story-card?matchId=${match.id}`}
+                  className="flex items-center gap-3 flex-1 min-w-0"
+                >
                   <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${match.resultBarColor}`}></div>
                   <div className="min-w-0 flex-1">
                     {match.isOwner ? (
@@ -759,8 +619,7 @@ function DashboardContent() {
                     </button>
                   )}
                 </div>
-                </div>
-              </SwipeableMatchCard>
+              </div>
             ))}
 
             {/* Load More Button */}
