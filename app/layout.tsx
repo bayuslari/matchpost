@@ -9,6 +9,8 @@ const outfit = Outfit({
   subsets: ['latin'],
   variable: '--font-outfit',
   display: 'swap',
+  preload: true,
+  adjustFontFallback: true,
 })
 
 export const metadata: Metadata = {
@@ -38,6 +40,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`h-full ${outfit.variable}`}>
+      <head>
+        {/* Preconnect to Supabase for faster API calls */}
+        <link rel="preconnect" href="https://supabase.co" />
+        <link rel="dns-prefetch" href="https://supabase.co" />
+        {/* Google Tag Manager */}
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+      </head>
       <body className="h-full font-outfit bg-yellow-500 md:bg-gray-50 md:dark:bg-gray-900">
         <div className="max-w-md mx-auto min-h-full bg-gray-50 dark:bg-gray-900">
           {children}

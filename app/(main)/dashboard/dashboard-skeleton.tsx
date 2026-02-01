@@ -6,8 +6,8 @@ export default function DashboardSkeleton() {
       <div className="bg-yellow-500 text-gray-900 px-6 pb-20 rounded-b-3xl header-safe-area">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <div className="h-4 w-20 bg-yellow-600/30 rounded animate-pulse mb-2"></div>
-            <div className="h-8 w-32 bg-yellow-600/30 rounded animate-pulse"></div>
+            <p className="text-yellow-800 text-sm">Welcome back</p>
+            <h1 className="text-2xl font-bold">Loading...</h1>
           </div>
           <div className="w-12 h-12 rounded-full bg-white/20 animate-pulse"></div>
         </div>
