@@ -2,23 +2,53 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Users, Globe } from 'lucide-react'
+import { Plus, Users, Globe, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useUserStore } from '@/lib/stores/user-store'
 import { Group } from '@/lib/database.types'
 
-type GroupWithMemberCount = Group & { member_count: number; user_rank?: number }
+type GroupWithMemberCount = Group & { member_count: number }
+
+// Helper to get member counts for multiple groups in one query
+async function getMemberCounts(supabase: ReturnType<typeof createClient>, groupIds: string[]) {
+  if (groupIds.length === 0) return new Map<string, number>()
+
+  const { data } = await supabase
+    .from('group_members')
+    .select('group_id')
+    .in('group_id', groupIds)
+
+  const counts = new Map<string, number>()
+  groupIds.forEach(id => counts.set(id, 0))
+
+  if (data) {
+    data.forEach(row => {
+      counts.set(row.group_id, (counts.get(row.group_id) || 0) + 1)
+    })
+  }
+
+  return counts
+}
+
+const PAGE_SIZE = 10
 
 export function GroupsTab() {
   const { profile } = useUserStore()
   const [myGroups, setMyGroups] = useState<GroupWithMemberCount[]>([])
   const [discoverGroups, setDiscoverGroups] = useState<GroupWithMemberCount[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null)
+  const [myGroupIds, setMyGroupIds] = useState<string[]>([])
 
   useEffect(() => {
     const fetchGroups = async () => {
       setLoading(true)
       const supabase = createClient()
+
+      let userGroupIds: string[] = []
+      let myGroupsList: Group[] = []
 
       if (profile) {
         // Fetch groups the user is a member of
@@ -26,33 +56,19 @@ export function GroupsTab() {
           .from('group_members')
           .select(`
             group_id,
-            groups (
-              id,
-              name,
-              description,
-              icon,
-              is_public,
-              created_by,
-              created_at,
-              updated_at
-            )
+            groups (*)
           `)
           .eq('user_id', profile.id)
 
         if (memberGroups) {
-          const groupsWithCount = await Promise.all(
-            memberGroups.map(async (m) => {
-              const group = m.groups as unknown as Group
-              const { count } = await supabase
-                .from('group_members')
-                .select('*', { count: 'exact', head: true })
-                .eq('group_id', group.id)
-              return { ...group, member_count: count || 0 }
-            })
-          )
-          setMyGroups(groupsWithCount)
+          myGroupsList = memberGroups
+            .map(m => m.groups as unknown as Group)
+            .filter(Boolean)
+          userGroupIds = myGroupsList.map(g => g.id)
         }
       }
+
+      setMyGroupIds(userGroupIds)
 
       // Fetch public groups for discovery (exclude user's groups)
       const { data: publicGroups } = await supabase
@@ -60,24 +76,36 @@ export function GroupsTab() {
         .select('*')
         .eq('is_public', true)
         .order('created_at', { ascending: false })
-        .limit(10)
+        .limit(PAGE_SIZE + 1) // Fetch one extra to check if there are more
 
-      if (publicGroups) {
-        const myGroupIds = myGroups.map(g => g.id)
-        const filteredGroups = publicGroups.filter(g => !myGroupIds.includes(g.id))
+      let filteredPublicGroups = publicGroups
+        ? publicGroups.filter(g => !userGroupIds.includes(g.id))
+        : []
 
-        const groupsWithCount = await Promise.all(
-          filteredGroups.map(async (group) => {
-            const { count } = await supabase
-              .from('group_members')
-              .select('*', { count: 'exact', head: true })
-              .eq('group_id', group.id)
-            return { ...group, member_count: count || 0 }
-          })
-        )
-        setDiscoverGroups(groupsWithCount)
+      // Check if there are more groups
+      const hasMoreGroups = filteredPublicGroups.length > PAGE_SIZE
+      if (hasMoreGroups) {
+        filteredPublicGroups = filteredPublicGroups.slice(0, PAGE_SIZE)
       }
+      setHasMore(hasMoreGroups)
 
+      // Get all member counts in ONE query (fix N+1)
+      const allGroupIds = [...userGroupIds, ...filteredPublicGroups.map(g => g.id)]
+      const memberCounts = await getMemberCounts(supabase, allGroupIds)
+
+      // Map counts to groups
+      const myGroupsWithCount = myGroupsList.map(g => ({
+        ...g,
+        member_count: memberCounts.get(g.id) || 0
+      }))
+
+      const discoverGroupsWithCount = filteredPublicGroups.map(g => ({
+        ...g,
+        member_count: memberCounts.get(g.id) || 0
+      }))
+
+      setMyGroups(myGroupsWithCount)
+      setDiscoverGroups(discoverGroupsWithCount)
       setLoading(false)
     }
 
@@ -85,10 +113,12 @@ export function GroupsTab() {
   }, [profile])
 
   const handleJoinGroup = async (groupId: string) => {
-    if (!profile) return
+    if (!profile || joiningGroupId) return
 
+    setJoiningGroupId(groupId)
     const supabase = createClient()
-    await supabase
+
+    const { error } = await supabase
       .from('group_members')
       .insert({
         group_id: groupId,
@@ -96,12 +126,62 @@ export function GroupsTab() {
         role: 'member',
       })
 
+    if (error) {
+      console.error('Failed to join group:', error)
+      setJoiningGroupId(null)
+      return
+    }
+
     // Move group from discover to my groups
     const joinedGroup = discoverGroups.find(g => g.id === groupId)
     if (joinedGroup) {
-      setMyGroups(prev => [...prev, joinedGroup])
+      setMyGroups(prev => [...prev, { ...joinedGroup, member_count: joinedGroup.member_count + 1 }])
       setDiscoverGroups(prev => prev.filter(g => g.id !== groupId))
+      setMyGroupIds(prev => [...prev, groupId])
     }
+    setJoiningGroupId(null)
+  }
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return
+
+    setLoadingMore(true)
+    const supabase = createClient()
+
+    // Fetch next page of public groups
+    const { data: publicGroups } = await supabase
+      .from('groups')
+      .select('*')
+      .eq('is_public', true)
+      .order('created_at', { ascending: false })
+      .range(discoverGroups.length, discoverGroups.length + PAGE_SIZE)
+
+    let newGroups = publicGroups
+      ? publicGroups.filter(g => !myGroupIds.includes(g.id))
+      : []
+
+    // Check if there are more groups
+    const hasMoreGroups = newGroups.length === PAGE_SIZE + 1
+    if (hasMoreGroups) {
+      newGroups = newGroups.slice(0, PAGE_SIZE)
+    }
+    setHasMore(hasMoreGroups || newGroups.length === PAGE_SIZE)
+
+    if (newGroups.length > 0) {
+      // Get member counts for new groups
+      const memberCounts = await getMemberCounts(supabase, newGroups.map(g => g.id))
+
+      const newGroupsWithCount = newGroups.map(g => ({
+        ...g,
+        member_count: memberCounts.get(g.id) || 0
+      }))
+
+      setDiscoverGroups(prev => [...prev, ...newGroupsWithCount])
+    } else {
+      setHasMore(false)
+    }
+
+    setLoadingMore(false)
   }
 
   if (loading) {
@@ -181,9 +261,13 @@ export function GroupsTab() {
             <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
               <Globe className="w-7 h-7 text-blue-600 dark:text-blue-400" />
             </div>
-            <p className="font-medium text-gray-800 dark:text-white mb-1">No public groups yet</p>
+            <p className="font-medium text-gray-800 dark:text-white mb-1">
+              {myGroups.length > 0 ? 'No more groups to discover' : 'No public groups yet'}
+            </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Be the first to create a group for your tennis community!
+              {myGroups.length > 0
+                ? 'You\'ve joined all available groups! Create a new one to grow your community.'
+                : 'Be the first to create a group for your tennis community!'}
             </p>
             <Link
               href="/community/groups/create"
@@ -194,32 +278,60 @@ export function GroupsTab() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {discoverGroups.map((group) => (
-              <div key={group.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center text-lg mb-2">
-                  {group.icon}
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              {discoverGroups.map((group) => (
+                <div key={group.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center text-lg mb-2">
+                    {group.icon}
+                  </div>
+                  <div className="font-semibold text-gray-800 dark:text-white text-sm">{group.name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">{group.member_count} members</div>
+                  {profile ? (
+                    <button
+                      onClick={() => handleJoinGroup(group.id)}
+                      disabled={joiningGroupId === group.id}
+                      className="w-full bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 text-sm font-semibold py-2 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-all disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      {joiningGroupId === group.id ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Joining...
+                        </>
+                      ) : (
+                        'Join'
+                      )}
+                    </button>
+                  ) : (
+                    <Link
+                      href="/login"
+                      className="w-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-semibold py-2 rounded-lg block text-center"
+                    >
+                      Login to Join
+                    </Link>
+                  )}
                 </div>
-                <div className="font-semibold text-gray-800 dark:text-white text-sm">{group.name}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">{group.member_count} members</div>
-                {profile ? (
-                  <button
-                    onClick={() => handleJoinGroup(group.id)}
-                    className="w-full bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 text-sm font-semibold py-2 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-all"
-                  >
-                    Join
-                  </button>
+              ))}
+            </div>
+
+            {/* Load More Button */}
+            {hasMore && (
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="w-full mt-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading...
+                  </>
                 ) : (
-                  <Link
-                    href="/login"
-                    className="w-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-semibold py-2 rounded-lg block text-center"
-                  >
-                    Login to Join
-                  </Link>
+                  'Load More Groups'
                 )}
-              </div>
-            ))}
-          </div>
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

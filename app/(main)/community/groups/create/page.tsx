@@ -1,21 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Globe, Lock, Users, LogIn } from 'lucide-react'
+import { ArrowLeft, Globe, Lock, Users, LogIn, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useUserStore } from '@/lib/stores/user-store'
+import { EmojiPicker } from '@/components/emoji-picker'
 
 export default function CreateGroupPage() {
   const router = useRouter()
-  const { profile } = useUserStore()
+  const { profile, isLoading, initialize } = useUserStore()
+
+  useEffect(() => {
+    initialize()
+  }, [initialize])
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [icon, setIcon] = useState('🎾')
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   const handleSubmit = async () => {
     if (!profile) {
@@ -47,17 +53,42 @@ export default function CreateGroupPage() {
       return
     }
 
-    // Add creator as admin member (trigger should do this, but just in case)
-    await supabase
+    // Add creator as admin member
+    const { error: memberError } = await supabase
       .from('group_members')
-      .upsert({
+      .insert({
         group_id: group.id,
         user_id: profile.id,
         role: 'admin',
       })
 
+    if (memberError) {
+      console.error('Failed to add creator as member:', memberError)
+      // Don't block - group was created successfully
+    }
+
     setLoading(false)
     router.push(`/community/groups/${group.id}`)
+  }
+
+  // Show loading while initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-4">
+          <Link
+            href="/community"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-800 dark:text-white"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <h1 className="text-xl font-bold text-gray-800 dark:text-white">Create Group</h1>
+        </div>
+        <div className="flex items-center justify-center p-6" style={{ minHeight: 'calc(100dvh - 120px)' }}>
+          <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+        </div>
+      </div>
+    )
   }
 
   if (!profile) {
@@ -119,11 +150,24 @@ export default function CreateGroupPage() {
 
         {/* Group Icon */}
         <div className="flex justify-center">
-          <button className="w-24 h-24 bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 border-dashed border-yellow-300 dark:border-yellow-700 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all">
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker(true)}
+            className="w-24 h-24 bg-yellow-100 dark:bg-yellow-900/30 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 border-dashed border-yellow-300 dark:border-yellow-700 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all"
+          >
             <span className="text-3xl">{icon}</span>
             <span className="text-xs text-yellow-600 dark:text-yellow-400">Change</span>
           </button>
         </div>
+
+        {/* Emoji Picker Modal */}
+        {showEmojiPicker && (
+          <EmojiPicker
+            selectedEmoji={icon}
+            onSelect={setIcon}
+            onClose={() => setShowEmojiPicker(false)}
+          />
+        )}
 
         {/* Group Name */}
         <div>
