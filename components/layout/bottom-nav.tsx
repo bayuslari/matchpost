@@ -24,9 +24,9 @@ export function BottomNav() {
   return (
     <div className="sticky bottom-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 px-6 py-3 flex justify-around">
       {navItems.map((item) => {
-        // For profile, check if on any profile page
+        // For profile, only active when viewing own profile
         const isActive = item.isProfile
-          ? pathname.startsWith('/profile')
+          ? pathname === '/profile' || pathname === `/profile/${profile?.username}`
           : pathname.startsWith(item.href)
         const Icon = item.icon
 
