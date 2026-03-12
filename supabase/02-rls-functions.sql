@@ -228,7 +228,7 @@ CREATE TRIGGER groups_updated_at
 -- ============================================
 -- VIEWS
 -- ============================================
-CREATE OR REPLACE VIEW user_stats AS
+CREATE OR REPLACE VIEW public.user_stats WITH (security_invoker = on) AS
 SELECT
   user_id,
   COUNT(*) as total_matches,

@@ -21,7 +21,12 @@
       "Bash(git -C /Users/bayuriyadi/Sites/matchpost log --oneline --all)",
       "Bash(git -C /Users/bayuriyadi/Sites/matchpost show HEAD:.env.local)",
       "Bash(tree:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(xargs:*)",
+      "Bash(magick:*)",
+      "Bash(git push:*)",
+      "Bash(npm run lint:*)",
+      "Bash(grep:*)"
     ]
   }
 }
