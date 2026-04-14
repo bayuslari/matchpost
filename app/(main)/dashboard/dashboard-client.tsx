@@ -201,7 +201,7 @@ export default function DashboardClient() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
       {/* Delete Confirmation Modal */}
       {deleteMatchId && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">

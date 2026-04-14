@@ -21,13 +21,13 @@ export type FeedMatch = {
 function timeAgo(dateStr: string) {
   const date = new Date(dateStr)
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-  if (seconds < 60) return 'just now'
+  if (seconds < 60) return 'baru saja'
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
+  if (minutes < 60) return `${minutes} mnt lalu`
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
+  if (hours < 24) return `${hours} jam lalu`
   const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d ago`
+  if (days < 7) return `${days} hari lalu`
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
 }
 
@@ -41,16 +41,13 @@ function formatFeedScore(sets: { set_number: number; player_score: number; oppon
 
 export function FeedItemSkeleton() {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center gap-3 animate-pulse">
-      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+    <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl shadow-sm p-4 flex items-center gap-3 animate-pulse">
+      <div className="w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-800/40 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-        <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="h-4 w-48 bg-amber-200 dark:bg-amber-800/40 rounded mb-2" />
+        <div className="h-3 w-28 bg-amber-200 dark:bg-amber-800/40 rounded" />
       </div>
-      <div className="text-right flex-shrink-0">
-        <div className="h-4 w-10 bg-gray-200 dark:bg-gray-700 rounded mb-1" />
-        <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
-      </div>
+      <div className="h-4 w-8 bg-amber-200 dark:bg-amber-800/40 rounded" />
     </div>
   )
 }
@@ -77,18 +74,12 @@ export function FeedItem({ match }: { match: FeedMatch }) {
     match.result === 'loss' ? 'LOSS' :
     'DRAW'
 
-  const barColor =
-    match.result === 'win' ? 'bg-yellow-500' :
-    match.result === 'loss' ? 'bg-red-400' :
-    'bg-gray-400'
-
-  // Navigate to creator's profile if they have one, otherwise non-clickable
   const href = username ? `/profile/${username}` : null
 
   const inner = (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center gap-3 transition-colors ${href ? 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' : ''}`}>
+    <div className={`bg-amber-50 dark:bg-amber-900/10 rounded-xl shadow-sm p-4 flex items-center gap-3 transition-colors ${href ? 'hover:bg-amber-100 dark:hover:bg-amber-900/20 cursor-pointer' : ''}`}>
       {/* Avatar */}
-      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center">
+      <div className="w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-800/40 flex-shrink-0 overflow-hidden flex items-center justify-center">
         {avatarUrl ? (
           <Image
             src={avatarUrl}
@@ -98,36 +89,31 @@ export function FeedItem({ match }: { match: FeedMatch }) {
             className="w-full h-full object-cover"
           />
         ) : (
-          <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
           </svg>
         )}
       </div>
 
-      {/* Result bar */}
-      <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${barColor}`} />
-
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">
-          {displayName}{' '}
-          <span className="font-normal text-gray-500 dark:text-gray-400">{resultLabel}</span>{' '}
+        <p className="text-sm text-gray-800 dark:text-white leading-snug">
+          <span className="font-semibold">{displayName}</span>{' '}
+          <span className="text-gray-500 dark:text-gray-400">{resultLabel}</span>{' '}
           <span className="font-semibold">{match.opponent_name}</span>
           {match.match_type === 'doubles' && match.opponent_partner_name && (
-            <span className="font-normal text-gray-500 dark:text-gray-400"> &amp; {match.opponent_partner_name}</span>
+            <span className="text-gray-500 dark:text-gray-400"> &amp; {match.opponent_partner_name}</span>
           )}
         </p>
-        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-400 dark:text-gray-500 flex-wrap">
-          {score && <span>{score}</span>}
-          {score && (match.location || ago) && <span>·</span>}
-          {match.location && <span className="truncate max-w-[100px]">{match.location}</span>}
-          {match.location && ago && <span>·</span>}
+        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+          {score && <span className="font-medium">{score}</span>}
+          {score && <span>·</span>}
           <span>{ago}</span>
         </div>
       </div>
 
       {/* Result badge */}
-      <div className={`text-sm font-bold flex-shrink-0 ${resultBadgeColor}`}>
+      <div className={`text-xs font-bold flex-shrink-0 ${resultBadgeColor}`}>
         {resultBadgeText}
       </div>
     </div>
