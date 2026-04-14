@@ -60,9 +60,6 @@ export default function DashboardClient() {
   const [searchQuery, setSearchQuery] = useState('')
   const [feedMatches, setFeedMatches] = useState<FeedMatch[]>([])
   const [feedLoading, setFeedLoading] = useState(true)
-  const [feedCursor, setFeedCursor] = useState<string | null>(null)
-  const [feedHasMore, setFeedHasMore] = useState(false)
-  const [feedLoadingMore, setFeedLoadingMore] = useState(false)
   const supabase = useMemo(() => createClient(), [])
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -71,9 +68,8 @@ export default function DashboardClient() {
     initialize()
   }, [initialize])
 
-  const fetchFeed = async (cursor?: string) => {
-    const PAGE_SIZE = 20
-    let query = supabase
+  const fetchFeed = async () => {
+    const { data } = await supabase
       .from('matches')
       .select(`
         id, user_id, opponent_name, opponent_partner_name, partner_name,
@@ -83,26 +79,10 @@ export default function DashboardClient() {
       `)
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
-      .limit(PAGE_SIZE + 1)
+      .limit(5)
 
-    if (cursor) {
-      query = query.lt('created_at', cursor)
-    }
-
-    const { data } = await query
     if (!data) return
-
-    const hasMore = data.length > PAGE_SIZE
-    const items = (hasMore ? data.slice(0, PAGE_SIZE) : data) as unknown as FeedMatch[]
-    const nextCursor = hasMore ? items[items.length - 1].created_at : null
-
-    if (cursor) {
-      setFeedMatches(prev => [...prev, ...items])
-    } else {
-      setFeedMatches(items)
-    }
-    setFeedCursor(nextCursor)
-    setFeedHasMore(hasMore)
+    setFeedMatches(data as unknown as FeedMatch[])
   }
 
   useEffect(() => {
@@ -634,13 +614,13 @@ export default function DashboardClient() {
       <div className="px-6 mt-6 pb-24">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white">Recent Activity</h2>
-          <Link href="/community" className="text-sm text-yellow-600 dark:text-yellow-400 font-medium hover:underline">
-            Lihat Semua →
+          <Link href="/community?tab=feed" className="text-sm text-yellow-600 dark:text-yellow-400 font-medium hover:underline">
+            See All →
           </Link>
         </div>
 
         {feedLoading ? (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-4">
             {[1, 2, 3].map((i) => <FeedItemSkeleton key={i} />)}
           </div>
         ) : feedMatches.length === 0 ? (
@@ -651,24 +631,10 @@ export default function DashboardClient() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-4">
             {feedMatches.map((match) => (
               <FeedItem key={match.id} match={match} />
             ))}
-            {feedHasMore && (
-              <button
-                onClick={async () => {
-                  if (!feedCursor || feedLoadingMore) return
-                  setFeedLoadingMore(true)
-                  await fetchFeed(feedCursor)
-                  setFeedLoadingMore(false)
-                }}
-                disabled={feedLoadingMore}
-                className="w-full py-3 text-center text-yellow-600 dark:text-yellow-400 font-medium hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-xl transition-all disabled:opacity-50"
-              >
-                {feedLoadingMore ? 'Loading...' : 'Load more'}
-              </button>
-            )}
           </div>
         )}
       </div>

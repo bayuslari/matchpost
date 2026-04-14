@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { formatTimeAgo } from '@/lib/utils'
 
 export type FeedMatch = {
   id: string
@@ -18,19 +19,6 @@ export type FeedMatch = {
   profiles: { username: string | null; full_name: string | null; avatar_url: string | null } | null
 }
 
-function timeAgo(dateStr: string) {
-  const date = new Date(dateStr)
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-  if (seconds < 60) return 'baru saja'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} mnt lalu`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} jam lalu`
-  const days = Math.floor(hours / 24)
-  if (days === 1) return 'kemarin'
-  if (days < 7) return `${days} hari lalu`
-  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
-}
 
 function formatFeedScore(sets: { set_number: number; player_score: number; opponent_score: number }[]) {
   if (!sets || sets.length === 0) return null
@@ -67,7 +55,7 @@ export function FeedItem({ match }: { match: FeedMatch }) {
   const displayName = match.profiles?.full_name || username || 'Unknown'
   const avatarUrl = match.profiles?.avatar_url
   const score = formatFeedScore(match.match_sets)
-  const ago = timeAgo(match.created_at)
+  const ago = formatTimeAgo(match.created_at)
 
   const resultVerb =
     match.result === 'win' ? 'beat' :
@@ -75,7 +63,7 @@ export function FeedItem({ match }: { match: FeedMatch }) {
     'drew with'
 
   const resultVerbColor =
-    match.result === 'win' ? 'text-green-600 dark:text-green-400' :
+    match.result === 'win' ? 'text-green-500 dark:text-green-400' :
     match.result === 'loss' ? 'text-red-500 dark:text-red-400' :
     'text-gray-500 dark:text-gray-400'
 
@@ -84,10 +72,20 @@ export function FeedItem({ match }: { match: FeedMatch }) {
     match.result === 'loss' ? 'border-l-red-400' :
     'border-l-gray-300 dark:border-l-gray-600'
 
+  const cardBg =
+    match.result === 'win' ? 'bg-green-50 dark:bg-green-900/10' :
+    match.result === 'loss' ? 'bg-red-50 dark:bg-red-900/10' :
+    'bg-white dark:bg-gray-800/60'
+
+  const scoreDot =
+    match.result === 'win' ? 'bg-green-400' :
+    match.result === 'loss' ? 'bg-red-400' :
+    'bg-gray-400'
+
   const href = username ? `/profile/${username}` : null
 
   const inner = (
-    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 border-l-4 ${accentBorder} rounded-xl shadow-sm p-4 flex items-center gap-3 transition-shadow ${href ? 'hover:shadow-md cursor-pointer' : ''}`}>
+    <div className={`${cardBg} border border-gray-200 dark:border-gray-600 border-l-4 ${accentBorder} rounded-xl shadow-sm p-4 flex items-center gap-3 transition-shadow ${href ? 'hover:shadow-md cursor-pointer' : ''}`}>
       {/* Avatar */}
       <div className="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center bg-yellow-500">
         {avatarUrl ? (
@@ -117,8 +115,9 @@ export function FeedItem({ match }: { match: FeedMatch }) {
 
         {/* Middle line: score */}
         {score && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-            🎾 {score}
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 flex items-center gap-1">
+            <span className={`w-2 h-2 rounded-full inline-block flex-shrink-0 ${scoreDot}`} />
+            {score}
           </p>
         )}
 
