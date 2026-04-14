@@ -82,62 +82,56 @@ export function FeedItem({ match }: { match: FeedMatch }) {
     match.result === 'loss' ? 'bg-red-400' :
     'bg-gray-400'
 
-  return (
-    <Link href={`/story-card?matchId=${match.id}`}>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
-        {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center">
-          {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt={displayName}
-              width={40}
-              height={40}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
+  // Navigate to creator's profile if they have one, otherwise non-clickable
+  const href = username ? `/profile/${username}` : null
+
+  const inner = (
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center gap-3 transition-colors ${href ? 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' : ''}`}>
+      {/* Avatar */}
+      <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center">
+        {avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            alt={displayName}
+            width={40}
+            height={40}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+        )}
+      </div>
+
+      {/* Result bar */}
+      <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${barColor}`} />
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">
+          {displayName}{' '}
+          <span className="font-normal text-gray-500 dark:text-gray-400">{resultLabel}</span>{' '}
+          <span className="font-semibold">{match.opponent_name}</span>
+          {match.match_type === 'doubles' && match.opponent_partner_name && (
+            <span className="font-normal text-gray-500 dark:text-gray-400"> &amp; {match.opponent_partner_name}</span>
           )}
-        </div>
-
-        {/* Result bar */}
-        <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${barColor}`} />
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">
-            {username ? (
-              <span
-                onClick={(e) => { e.preventDefault(); window.location.href = `/profile/${username}` }}
-                className="hover:text-yellow-600 dark:hover:text-yellow-400 cursor-pointer"
-              >
-                {displayName}
-              </span>
-            ) : (
-              displayName
-            )}{' '}
-            <span className="font-normal text-gray-500 dark:text-gray-400">{resultLabel}</span>{' '}
-            <span className="font-semibold">{match.opponent_name}</span>
-            {match.match_type === 'doubles' && match.opponent_partner_name && (
-              <span className="font-normal text-gray-500 dark:text-gray-400"> &amp; {match.opponent_partner_name}</span>
-            )}
-          </p>
-          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-400 dark:text-gray-500 flex-wrap">
-            {score && <span>{score}</span>}
-            {score && (match.location || ago) && <span>·</span>}
-            {match.location && <span className="truncate max-w-[100px]">{match.location}</span>}
-            {match.location && ago && <span>·</span>}
-            <span>{ago}</span>
-          </div>
-        </div>
-
-        {/* Result badge */}
-        <div className={`text-sm font-bold flex-shrink-0 ${resultBadgeColor}`}>
-          {resultBadgeText}
+        </p>
+        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-400 dark:text-gray-500 flex-wrap">
+          {score && <span>{score}</span>}
+          {score && (match.location || ago) && <span>·</span>}
+          {match.location && <span className="truncate max-w-[100px]">{match.location}</span>}
+          {match.location && ago && <span>·</span>}
+          <span>{ago}</span>
         </div>
       </div>
-    </Link>
+
+      {/* Result badge */}
+      <div className={`text-sm font-bold flex-shrink-0 ${resultBadgeColor}`}>
+        {resultBadgeText}
+      </div>
+    </div>
   )
+
+  return href ? <Link href={href}>{inner}</Link> : inner
 }
