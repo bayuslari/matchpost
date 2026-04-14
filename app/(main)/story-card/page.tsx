@@ -707,6 +707,16 @@ function StoryCardContent() {
         </div>
       )}
 
+      {/* Private match disclaimer */}
+      {!isDemo && isOwner && match?.visibility === 'private' && (
+        <div className="mx-6 mb-4 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 flex items-start gap-2">
+          <span className="text-base leading-none mt-0.5">🔒</span>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            This match is private. Sharing creates a card but won&apos;t post to your public profile.
+          </p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="px-6 space-y-3 pb-4">
         <button
