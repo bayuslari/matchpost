@@ -10,6 +10,7 @@ import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
 import type { MatchSet, Profile } from '@/lib/database.types'
 import DashboardSkeleton from './dashboard-skeleton'
+import { FeedItem, FeedItemSkeleton, type FeedMatch } from './feed-item'
 
 // Format score from sets (with optional flip for viewer's perspective)
 function formatScore(matchSets: MatchSet[], flipScore: boolean = false) {
@@ -57,6 +58,8 @@ export default function DashboardClient() {
   const [displayLimit, setDisplayLimit] = useState(10)
   const [matchTypeFilter, setMatchTypeFilter] = useState<'all' | 'singles' | 'doubles'>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [feedMatches, setFeedMatches] = useState<FeedMatch[]>([])
+  const [feedLoading, setFeedLoading] = useState(true)
   const supabase = useMemo(() => createClient(), [])
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -64,6 +67,28 @@ export default function DashboardClient() {
   useEffect(() => {
     initialize()
   }, [initialize])
+
+  const fetchFeed = async () => {
+    const { data } = await supabase
+      .from('matches')
+      .select(`
+        id, user_id, opponent_name, opponent_partner_name, partner_name,
+        match_type, result, location, created_at, visibility,
+        match_sets (set_number, player_score, opponent_score),
+        profiles!matches_user_id_fkey (username, full_name, avatar_url)
+      `)
+      .eq('visibility', 'public')
+      .order('created_at', { ascending: false })
+      .limit(5)
+
+    if (!data) return
+    setFeedMatches(data as unknown as FeedMatch[])
+  }
+
+  useEffect(() => {
+    fetchFeed().finally(() => setFeedLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Refresh matches when coming from story-card page
   useEffect(() => {
@@ -156,7 +181,7 @@ export default function DashboardClient() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
       {/* Delete Confirmation Modal */}
       {deleteMatchId && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6">
@@ -332,7 +357,7 @@ export default function DashboardClient() {
       )}
 
       {/* Recent Matches */}
-      <div className="px-6 mt-6 pb-24">
+      <div className="px-6 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white">
             {isGuest ? 'Your Matches' : 'Recent Matches'}
@@ -581,6 +606,35 @@ export default function DashboardClient() {
                 Load more ({filteredMatches.length - displayLimit} remaining)
               </button>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Recent Activity Feed */}
+      <div className="px-6 mt-6 pb-24">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-white">Recent Activity</h2>
+          <Link href="/community?tab=feed" className="text-sm text-yellow-600 dark:text-yellow-400 font-medium hover:underline">
+            See All →
+          </Link>
+        </div>
+
+        {feedLoading ? (
+          <div className="flex flex-col gap-4">
+            {[1, 2, 3].map((i) => <FeedItemSkeleton key={i} />)}
+          </div>
+        ) : feedMatches.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm text-center">
+            <div className="text-4xl mb-3">🎾</div>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              No recent matches yet. Invite friends to get started!
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {feedMatches.map((match) => (
+              <FeedItem key={match.id} match={match} />
+            ))}
           </div>
         )}
       </div>

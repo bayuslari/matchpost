@@ -1,7 +1,7 @@
 // Server Component - renders statically for instant FCP
 export default function DashboardSkeleton() {
   return (
-    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
       {/* Header Skeleton */}
       <div className="bg-yellow-500 text-gray-900 px-6 pb-20 rounded-b-3xl header-safe-area">
         <div className="flex items-center justify-between mb-6">
