@@ -10,6 +10,7 @@ import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
 import type { MatchSet, Profile } from '@/lib/database.types'
 import DashboardSkeleton from './dashboard-skeleton'
+import { FeedItem, FeedItemSkeleton, type FeedMatch } from './feed-item'
 
 // Format score from sets (with optional flip for viewer's perspective)
 function formatScore(matchSets: MatchSet[], flipScore: boolean = false) {
@@ -57,6 +58,11 @@ export default function DashboardClient() {
   const [displayLimit, setDisplayLimit] = useState(10)
   const [matchTypeFilter, setMatchTypeFilter] = useState<'all' | 'singles' | 'doubles'>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [feedMatches, setFeedMatches] = useState<FeedMatch[]>([])
+  const [feedLoading, setFeedLoading] = useState(true)
+  const [feedCursor, setFeedCursor] = useState<string | null>(null)
+  const [feedHasMore, setFeedHasMore] = useState(false)
+  const [feedLoadingMore, setFeedLoadingMore] = useState(false)
   const supabase = useMemo(() => createClient(), [])
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -64,6 +70,45 @@ export default function DashboardClient() {
   useEffect(() => {
     initialize()
   }, [initialize])
+
+  const fetchFeed = async (cursor?: string) => {
+    const PAGE_SIZE = 20
+    let query = supabase
+      .from('matches')
+      .select(`
+        id, user_id, opponent_name, opponent_partner_name, partner_name,
+        match_type, result, location, created_at, visibility,
+        match_sets (set_number, player_score, opponent_score),
+        profiles!matches_user_id_fkey (username, full_name, avatar_url)
+      `)
+      .eq('visibility', 'public')
+      .order('created_at', { ascending: false })
+      .limit(PAGE_SIZE + 1)
+
+    if (cursor) {
+      query = query.lt('created_at', cursor)
+    }
+
+    const { data } = await query
+    if (!data) return
+
+    const hasMore = data.length > PAGE_SIZE
+    const items = (hasMore ? data.slice(0, PAGE_SIZE) : data) as unknown as FeedMatch[]
+    const nextCursor = hasMore ? items[items.length - 1].created_at : null
+
+    if (cursor) {
+      setFeedMatches(prev => [...prev, ...items])
+    } else {
+      setFeedMatches(items)
+    }
+    setFeedCursor(nextCursor)
+    setFeedHasMore(hasMore)
+  }
+
+  useEffect(() => {
+    fetchFeed().finally(() => setFeedLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Refresh matches when coming from story-card page
   useEffect(() => {
@@ -332,7 +377,7 @@ export default function DashboardClient() {
       )}
 
       {/* Recent Matches */}
-      <div className="px-6 mt-6 pb-24">
+      <div className="px-6 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white">
             {isGuest ? 'Your Matches' : 'Recent Matches'}
@@ -579,6 +624,44 @@ export default function DashboardClient() {
                 className="w-full py-3 text-center text-yellow-600 dark:text-yellow-400 font-medium hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-xl transition-all"
               >
                 Load more ({filteredMatches.length - displayLimit} remaining)
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Recent Activity Feed */}
+      <div className="px-6 mt-6 pb-24">
+        <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Recent Activity</h2>
+
+        {feedLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => <FeedItemSkeleton key={i} />)}
+          </div>
+        ) : feedMatches.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm text-center">
+            <div className="text-4xl mb-3">🎾</div>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              No recent matches yet. Invite friends to get started!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {feedMatches.map((match) => (
+              <FeedItem key={match.id} match={match} />
+            ))}
+            {feedHasMore && (
+              <button
+                onClick={async () => {
+                  if (!feedCursor || feedLoadingMore) return
+                  setFeedLoadingMore(true)
+                  await fetchFeed(feedCursor)
+                  setFeedLoadingMore(false)
+                }}
+                disabled={feedLoadingMore}
+                className="w-full py-3 text-center text-yellow-600 dark:text-yellow-400 font-medium hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-xl transition-all disabled:opacity-50"
+              >
+                {feedLoadingMore ? 'Loading...' : 'Load more'}
               </button>
             )}
           </div>
