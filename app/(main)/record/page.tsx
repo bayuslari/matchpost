@@ -45,6 +45,7 @@ function RecordMatchContent() {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   })
+  const [visibility, setVisibility] = useState<'public' | 'private'>('public')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [recentPlayers, setRecentPlayers] = useState<Profile[]>([])
@@ -131,6 +132,7 @@ function RecordMatchContent() {
           setLocation(matchData.location || '')
           setDate(matchData.played_at.split('T')[0])
           setSelectedGroupId(matchData.group_id || null)
+          setVisibility(matchData.visibility ?? 'public')
 
           if (matchData.match_type === 'doubles') {
             setPartner(matchData.partner_name || '')
@@ -281,6 +283,7 @@ function RecordMatchContent() {
             played_at: date,
             result: resultForTracking,
             group_id: selectedGroupId,
+            visibility,
           })
           .eq('id', matchId)
 
@@ -336,6 +339,7 @@ function RecordMatchContent() {
             location: location.trim() || null,
             played_at: date,
             group_id: selectedGroupId,
+            visibility,
           })
           .select()
           .single()
@@ -597,6 +601,42 @@ function RecordMatchContent() {
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
               Link this match to a group you&apos;re in
+            </p>
+          </div>
+        )}
+
+        {/* Match Visibility */}
+        {!isGuestMode && (
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Match Visibility</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setVisibility('public')}
+                className={`py-3 px-4 font-semibold rounded-xl transition-all ${
+                  visibility === 'public'
+                    ? 'bg-yellow-500 text-gray-900'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                Public
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibility('private')}
+                className={`py-3 px-4 font-semibold rounded-xl transition-all ${
+                  visibility === 'private'
+                    ? 'bg-yellow-500 text-gray-900'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                Private
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+              {visibility === 'private'
+                ? 'Private matches count toward your personal stats but won\'t appear in the community feed or your public profile.'
+                : 'Public matches are visible in the community feed and on your public profile.'}
             </p>
           </div>
         )}

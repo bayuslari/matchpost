@@ -123,7 +123,7 @@ export default function ProfileClient({ username }: ProfileClientProps) {
           opponent_partner:profiles!matches_opponent_partner_user_id_fkey(*)
         `)
         .or(`user_id.eq.${profileData.id},opponent_user_id.eq.${profileData.id},partner_user_id.eq.${profileData.id},opponent_partner_user_id.eq.${profileData.id}`)
-        .eq('is_public', true)
+        .eq('visibility', 'public')
         .order('played_at', { ascending: false })
 
       if (allMatches) {
