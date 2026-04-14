@@ -632,7 +632,12 @@ export default function DashboardClient() {
 
       {/* Recent Activity Feed */}
       <div className="px-6 mt-6 pb-24">
-        <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Recent Activity</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-white">Recent Activity</h2>
+          <Link href="/community" className="text-sm text-yellow-600 dark:text-yellow-400 font-medium hover:underline">
+            Lihat Semua →
+          </Link>
+        </div>
 
         {feedLoading ? (
           <div className="space-y-3">

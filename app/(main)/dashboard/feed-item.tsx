@@ -27,6 +27,7 @@ function timeAgo(dateStr: string) {
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours} jam lalu`
   const days = Math.floor(hours / 24)
+  if (days === 1) return 'kemarin'
   if (days < 7) return `${days} hari lalu`
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
 }
@@ -39,15 +40,24 @@ function formatFeedScore(sets: { set_number: number; player_score: number; oppon
     .join(', ')
 }
 
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase()
+}
+
 export function FeedItemSkeleton() {
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl shadow-sm p-4 flex items-center gap-3 animate-pulse">
-      <div className="w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-800/40 flex-shrink-0" />
-      <div className="flex-1 min-w-0">
-        <div className="h-4 w-48 bg-amber-200 dark:bg-amber-800/40 rounded mb-2" />
-        <div className="h-3 w-28 bg-amber-200 dark:bg-amber-800/40 rounded" />
+    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 border-l-4 border-l-gray-200 dark:border-l-gray-600 rounded-xl shadow-sm p-4 flex items-center gap-3 animate-pulse">
+      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="h-4 w-44 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
       </div>
-      <div className="h-4 w-8 bg-amber-200 dark:bg-amber-800/40 rounded" />
     </div>
   )
 }
@@ -59,62 +69,67 @@ export function FeedItem({ match }: { match: FeedMatch }) {
   const score = formatFeedScore(match.match_sets)
   const ago = timeAgo(match.created_at)
 
-  const resultLabel =
+  const resultVerb =
     match.result === 'win' ? 'beat' :
     match.result === 'loss' ? 'lost to' :
     'drew with'
 
-  const resultBadgeColor =
-    match.result === 'win' ? 'text-yellow-600 dark:text-yellow-400' :
+  const resultVerbColor =
+    match.result === 'win' ? 'text-green-600 dark:text-green-400' :
     match.result === 'loss' ? 'text-red-500 dark:text-red-400' :
     'text-gray-500 dark:text-gray-400'
 
-  const resultBadgeText =
-    match.result === 'win' ? 'WIN' :
-    match.result === 'loss' ? 'LOSS' :
-    'DRAW'
+  const accentBorder =
+    match.result === 'win' ? 'border-l-green-400' :
+    match.result === 'loss' ? 'border-l-red-400' :
+    'border-l-gray-300 dark:border-l-gray-600'
 
   const href = username ? `/profile/${username}` : null
 
   const inner = (
-    <div className={`bg-amber-50 dark:bg-amber-900/10 rounded-xl shadow-sm p-4 flex items-center gap-3 transition-colors ${href ? 'hover:bg-amber-100 dark:hover:bg-amber-900/20 cursor-pointer' : ''}`}>
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 border-l-4 ${accentBorder} rounded-xl shadow-sm p-4 flex items-center gap-3 transition-shadow ${href ? 'hover:shadow-md cursor-pointer' : ''}`}>
       {/* Avatar */}
-      <div className="w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-800/40 flex-shrink-0 overflow-hidden flex items-center justify-center">
+      <div className="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center bg-yellow-500">
         {avatarUrl ? (
           <Image
             src={avatarUrl}
             alt={displayName}
-            width={40}
-            height={40}
+            width={48}
+            height={48}
             className="w-full h-full object-cover"
           />
         ) : (
-          <svg className="w-5 h-5 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-          </svg>
+          <span className="text-sm font-bold text-gray-900">{getInitials(displayName)}</span>
         )}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-800 dark:text-white leading-snug">
-          <span className="font-semibold">{displayName}</span>{' '}
-          <span className="text-gray-500 dark:text-gray-400">{resultLabel}</span>{' '}
-          <span className="font-semibold">{match.opponent_name}</span>
+        {/* Top line: result sentence */}
+        <p className="text-sm leading-snug text-gray-700 dark:text-gray-200">
+          <span className="font-semibold text-gray-900 dark:text-white">{displayName}</span>{' '}
+          <span className={`font-medium ${resultVerbColor}`}>{resultVerb}</span>{' '}
+          <span className="text-gray-700 dark:text-gray-300">{match.opponent_name}</span>
           {match.match_type === 'doubles' && match.opponent_partner_name && (
             <span className="text-gray-500 dark:text-gray-400"> &amp; {match.opponent_partner_name}</span>
           )}
         </p>
-        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-          {score && <span className="font-medium">{score}</span>}
-          {score && <span>·</span>}
-          <span>{ago}</span>
-        </div>
-      </div>
 
-      {/* Result badge */}
-      <div className={`text-xs font-bold flex-shrink-0 ${resultBadgeColor}`}>
-        {resultBadgeText}
+        {/* Middle line: score */}
+        {score && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+            🎾 {score}
+          </p>
+        )}
+
+        {/* Bottom line: location + time ago */}
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          {match.location ? (
+            <><span className="truncate">{match.location}</span> · {ago}</>
+          ) : (
+            ago
+          )}
+        </p>
       </div>
     </div>
   )
