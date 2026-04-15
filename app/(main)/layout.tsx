@@ -1,4 +1,5 @@
 import { BottomNav } from '@/components/layout/bottom-nav'
+import { AchievementToast } from '@/components/achievements/achievement-toast'
 
 export default function MainLayout({
   children,
@@ -11,6 +12,7 @@ export default function MainLayout({
         {children}
       </main>
       <BottomNav />
+      <AchievementToast />
     </>
   )
 }
