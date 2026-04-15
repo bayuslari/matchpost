@@ -24,6 +24,7 @@ export function FeedTab() {
         profiles!matches_user_id_fkey (username, full_name, avatar_url)
       `)
       .eq('visibility', 'public')
+      .in('confirmation_status', ['auto', 'confirmed'])
       .order('created_at', { ascending: false })
       .limit(PAGE_SIZE + 1)
 

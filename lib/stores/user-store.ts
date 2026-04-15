@@ -81,6 +81,7 @@ interface UserState {
   // State
   profile: Profile | null
   matches: MatchWithSets[]
+  userId: string | null  // current authenticated user's ID
   isGuest: boolean
   isLoading: boolean
   isInitialized: boolean
@@ -100,6 +101,7 @@ interface UserState {
   }
   achievements: Achievement[]
   pendingAchievements: Achievement[]  // Newly unlocked, not yet toasted
+  pendingConfirmations: MatchWithSets[]  // Matches where user is opponent and status=pending
 
   // Actions
   initialize: () => Promise<void>
@@ -109,6 +111,8 @@ interface UserState {
   addMatch: (match: MatchWithSets) => void
   removeMatch: (matchId: string) => void
   clearPendingAchievements: () => void
+  confirmMatch: (matchId: string) => Promise<void>
+  disputeMatch: (matchId: string) => Promise<void>
   reset: () => void
 }
 
@@ -128,6 +132,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   // Initial state
   profile: null,
   matches: [],
+  userId: null,
   isGuest: false,
   isLoading: true,
   isInitialized: false,
@@ -135,6 +140,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   stats: initialStats,
   achievements: [],
   pendingAchievements: [],
+  pendingConfirmations: [],
 
   // Initialize user data (call once on app load)
   initialize: async () => {
@@ -175,7 +181,7 @@ export const useUserStore = create<UserState>((set, get) => ({
 
       if (!user) {
         clearCache()
-        set({ isGuest: true, isLoading: false, isInitialized: true, isInitializing: false })
+        set({ userId: null, isGuest: true, isLoading: false, isInitialized: true, isInitializing: false })
         return
       }
 
@@ -226,19 +232,22 @@ export const useUserStore = create<UserState>((set, get) => ({
       })) as MatchWithSets[]
 
       // Calculate stats for all matches (with result flipped for opponent-side shared matches)
-      const statsMatches = matches.map(m => {
-        if (m.isOwner) return m
-        // For shared matches, check if user is on opponent side
-        const isOnOpponentSide = m.opponent_user_id === user.id || m.opponent_partner_user_id === user.id
-        if (isOnOpponentSide) {
-          // Flip the result for stats
-          let flippedResult = m.result
-          if (m.result === 'win') flippedResult = 'loss'
-          else if (m.result === 'loss') flippedResult = 'win'
-          return { ...m, result: flippedResult }
-        }
-        return m
-      })
+      // For non-owner matches: only count confirmed/auto (exclude pending incoming)
+      const statsMatches = matches
+        .filter(m => m.isOwner || m.confirmation_status === 'auto' || m.confirmation_status === 'confirmed')
+        .map(m => {
+          if (m.isOwner) return m
+          // For shared matches, check if user is on opponent side
+          const isOnOpponentSide = m.opponent_user_id === user.id || m.opponent_partner_user_id === user.id
+          if (isOnOpponentSide) {
+            // Flip the result for stats
+            let flippedResult = m.result
+            if (m.result === 'win') flippedResult = 'loss'
+            else if (m.result === 'loss') flippedResult = 'win'
+            return { ...m, result: flippedResult }
+          }
+          return m
+        })
       const stats = calculateStats(statsMatches)
       const achievements = calculateAchievements(statsMatches, stats)
 
@@ -246,15 +255,22 @@ export const useUserStore = create<UserState>((set, get) => ({
       const seenIds: string[] = profileData?.seen_achievement_ids ?? []
       const newlyUnlocked = achievements.filter(a => a.unlocked && !seenIds.includes(a.id))
 
+      // Matches waiting for current user to confirm
+      const pendingConfirmations = matches.filter(
+        m => m.opponent_user_id === user.id && m.confirmation_status === 'pending'
+      )
+
       // Save to cache for next visit
       saveToCache({ profile: profileData, matches, stats })
 
       set({
         profile: profileData,
         matches,
+        userId: user.id,
         stats,
         achievements,
         pendingAchievements: newlyUnlocked,
+        pendingConfirmations,
         isGuest: false,
         isLoading: false,
         isInitialized: true,
@@ -316,25 +332,32 @@ export const useUserStore = create<UserState>((set, get) => ({
     })) as MatchWithSets[]
 
     // Calculate stats for all matches (with result flipped for opponent-side shared matches)
-    const statsMatches = matches.map(m => {
-      if (m.isOwner) return m
-      // For shared matches, check if user is on opponent side
-      const isOnOpponentSide = m.opponent_user_id === user.id || m.opponent_partner_user_id === user.id
-      if (isOnOpponentSide) {
-        // Flip the result for stats
-        let flippedResult = m.result
-        if (m.result === 'win') flippedResult = 'loss'
-        else if (m.result === 'loss') flippedResult = 'win'
-        return { ...m, result: flippedResult }
-      }
-      return m
-    })
+    // For non-owner matches: only count confirmed/auto (exclude pending incoming)
+    const statsMatches = matches
+      .filter(m => m.isOwner || m.confirmation_status === 'auto' || m.confirmation_status === 'confirmed')
+      .map(m => {
+        if (m.isOwner) return m
+        // For shared matches, check if user is on opponent side
+        const isOnOpponentSide = m.opponent_user_id === user.id || m.opponent_partner_user_id === user.id
+        if (isOnOpponentSide) {
+          // Flip the result for stats
+          let flippedResult = m.result
+          if (m.result === 'win') flippedResult = 'loss'
+          else if (m.result === 'loss') flippedResult = 'win'
+          return { ...m, result: flippedResult }
+        }
+        return m
+      })
     const stats = calculateStats(statsMatches)
     const achievements = calculateAchievements(statsMatches, stats)
 
+    const pendingConfirmations = matches.filter(
+      m => m.opponent_user_id === user.id && m.confirmation_status === 'pending'
+    )
+
     const { profile } = get()
     saveToCache({ profile, matches, stats })
-    set({ matches, stats, achievements })
+    set({ matches, stats, achievements, pendingConfirmations })
   },
 
   // Update profile locally (after successful API update)
@@ -347,25 +370,57 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   // Add match locally
   addMatch: (match) => {
-    const { matches, profile } = get()
+    const { matches, profile, userId } = get()
     const newMatches = [match, ...matches]
-    const stats = calculateStats(newMatches)
-    const achievements = calculateAchievements(newMatches, stats)
+    const statsMatches = newMatches
+      .filter(m => m.isOwner || m.confirmation_status === 'auto' || m.confirmation_status === 'confirmed')
+      .map(m => {
+        if (m.isOwner) return m
+        const isOnOpponentSide = m.opponent_user_id === userId || m.opponent_partner_user_id === userId
+        if (isOnOpponentSide) {
+          let flippedResult = m.result
+          if (m.result === 'win') flippedResult = 'loss'
+          else if (m.result === 'loss') flippedResult = 'win'
+          return { ...m, result: flippedResult }
+        }
+        return m
+      })
+    const stats = calculateStats(statsMatches)
+    const achievements = calculateAchievements(statsMatches, stats)
     // Check for newly unlocked achievements (use profile.seen_achievement_ids from store)
     const seenIds: string[] = profile?.seen_achievement_ids ?? []
     const newlyUnlocked = achievements.filter(a => a.unlocked && !seenIds.includes(a.id))
+    const pendingConfirmations = newMatches.filter(
+      m => m.opponent_user_id === userId && m.confirmation_status === 'pending'
+    )
     saveToCache({ profile, matches: newMatches, stats })
-    set({ matches: newMatches, stats, achievements, pendingAchievements: newlyUnlocked })
+    set({ matches: newMatches, stats, achievements, pendingAchievements: newlyUnlocked, pendingConfirmations })
   },
 
   // Remove match locally
   removeMatch: (matchId) => {
-    const { matches, profile } = get()
+    const { matches, profile, userId } = get()
     const newMatches = matches.filter(m => m.id !== matchId)
-    const stats = calculateStats(newMatches)
-    const achievements = calculateAchievements(newMatches, stats)
+    const statsMatches = newMatches
+      .filter(m => m.isOwner || m.confirmation_status === 'auto' || m.confirmation_status === 'confirmed')
+      .map(m => {
+        if (m.isOwner) return m
+        const isOnOpponentSide = m.opponent_user_id === userId || m.opponent_partner_user_id === userId
+        if (isOnOpponentSide) {
+          let flippedResult = m.result
+          if (m.result === 'win') flippedResult = 'loss'
+          else if (m.result === 'loss') flippedResult = 'win'
+          return { ...m, result: flippedResult }
+        }
+        return m
+      })
+    const stats = calculateStats(statsMatches)
+    const achievements = calculateAchievements(statsMatches, stats)
+    const pendingConfirmations = newMatches.filter(
+      m => m.opponent_user_id === userId && m.confirmation_status === 'pending'
+    )
     saveToCache({ profile, matches: newMatches, stats })
-    set({ matches: newMatches, stats, achievements })
+    set({ matches: newMatches, stats, achievements, pendingConfirmations })
   },
 
   // Mark pending achievements as seen — persist to Supabase (fire-and-forget)
@@ -392,12 +447,53 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
   },
 
+  // Confirm a pending match (opponent action)
+  confirmMatch: async (matchId) => {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('matches')
+      .update({ confirmation_status: 'confirmed' })
+      .eq('id', matchId)
+
+    if (!error) {
+      const { matches, userId } = get()
+      const updatedMatches = matches.map(m =>
+        m.id === matchId ? { ...m, confirmation_status: 'confirmed' as const } : m
+      )
+      const pendingConfirmations = updatedMatches.filter(
+        m => m.opponent_user_id === userId && m.confirmation_status === 'pending'
+      )
+      set({ matches: updatedMatches, pendingConfirmations })
+    }
+  },
+
+  // Dispute a pending match (opponent action)
+  disputeMatch: async (matchId) => {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('matches')
+      .update({ confirmation_status: 'disputed' })
+      .eq('id', matchId)
+
+    if (!error) {
+      const { matches, userId } = get()
+      const updatedMatches = matches.map(m =>
+        m.id === matchId ? { ...m, confirmation_status: 'disputed' as const } : m
+      )
+      const pendingConfirmations = updatedMatches.filter(
+        m => m.opponent_user_id === userId && m.confirmation_status === 'pending'
+      )
+      set({ matches: updatedMatches, pendingConfirmations })
+    }
+  },
+
   // Reset store (on logout)
   reset: () => {
     clearCache()
     set({
       profile: null,
       matches: [],
+      userId: null,
       isGuest: false,
       isLoading: false,
       isInitialized: false,
@@ -405,6 +501,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       stats: initialStats,
       achievements: [],
       pendingAchievements: [],
+      pendingConfirmations: [],
     })
   },
 }))

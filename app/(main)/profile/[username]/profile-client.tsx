@@ -116,6 +116,7 @@ export default function ProfileClient({ username }: ProfileClientProps) {
       setIsOwnProfile(user?.id === profileData.id)
 
       // Fetch ALL matches where profile owner is involved (as creator, opponent, or partner)
+      // Only show confirmed/auto matches publicly
       const { data: allMatches } = await supabase
         .from('matches')
         .select(`
@@ -128,6 +129,7 @@ export default function ProfileClient({ username }: ProfileClientProps) {
         `)
         .or(`user_id.eq.${profileData.id},opponent_user_id.eq.${profileData.id},partner_user_id.eq.${profileData.id},opponent_partner_user_id.eq.${profileData.id}`)
         .eq('visibility', 'public')
+        .in('confirmation_status', ['auto', 'confirmed'])
         .order('played_at', { ascending: false })
 
       if (allMatches) {

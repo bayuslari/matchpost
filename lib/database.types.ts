@@ -65,6 +65,7 @@ export type Database = {
           notes: string | null
           is_public: boolean
           visibility: 'public' | 'private'
+          confirmation_status: 'auto' | 'pending' | 'confirmed' | 'disputed'
           group_id: string | null
           created_at: string
           updated_at: string
@@ -85,6 +86,7 @@ export type Database = {
           notes?: string | null
           is_public?: boolean
           visibility?: 'public' | 'private'
+          confirmation_status?: 'auto' | 'pending' | 'confirmed' | 'disputed'
           group_id?: string | null
           created_at?: string
           updated_at?: string
@@ -105,6 +107,7 @@ export type Database = {
           notes?: string | null
           is_public?: boolean
           visibility?: 'public' | 'private'
+          confirmation_status?: 'auto' | 'pending' | 'confirmed' | 'disputed'
           group_id?: string | null
           created_at?: string
           updated_at?: string

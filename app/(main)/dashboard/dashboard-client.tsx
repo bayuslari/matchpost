@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Link2 } from 'lucide-react'
+import { Plus, Trash2, Loader2, LogIn, User, ChevronRight, Link2, Check, X, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import { useUserStore } from '@/lib/stores/user-store'
@@ -52,8 +52,11 @@ function formatDate(dateStr: string) {
 }
 
 export default function DashboardClient() {
-  const { profile, matches, stats, isGuest, isLoading, initialize, removeMatch, refreshMatches } = useUserStore()
+  const { profile, matches, stats, isGuest, isLoading, initialize, removeMatch, refreshMatches, pendingConfirmations, confirmMatch, disputeMatch } = useUserStore()
   const [deleteMatchId, setDeleteMatchId] = useState<string | null>(null)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [disputingId, setDisputingId] = useState<string | null>(null)
+  const [disputedId, setDisputedId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [displayLimit, setDisplayLimit] = useState(10)
   const [matchTypeFilter, setMatchTypeFilter] = useState<'all' | 'singles' | 'doubles'>('all')
@@ -78,6 +81,7 @@ export default function DashboardClient() {
         profiles!matches_user_id_fkey (username, full_name, avatar_url)
       `)
       .eq('visibility', 'public')
+      .in('confirmation_status', ['auto', 'confirmed'])
       .order('created_at', { ascending: false })
       .limit(5)
 
@@ -102,6 +106,10 @@ export default function DashboardClient() {
   // Filter matches by type and search query
   const filteredMatches = useMemo(() => {
     return matches.filter(match => {
+      // Hide pending incoming matches from main list (shown in "Matches to Review" section instead)
+      if (!match.isOwner && match.confirmation_status === 'pending') {
+        return false
+      }
       // Filter by match type
       if (matchTypeFilter !== 'all' && match.match_type !== matchTypeFilter) {
         return false
@@ -333,6 +341,87 @@ export default function DashboardClient() {
         </div>
       )}
 
+      {/* Matches to Review */}
+      {!isGuest && pendingConfirmations.length > 0 && (
+        <div className="px-6 mt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-white">Matches to Review</h2>
+            <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              {pendingConfirmations.length}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {pendingConfirmations.map((match) => {
+              const creatorName = match.creatorProfile?.full_name || match.creatorProfile?.username || 'Someone'
+              const score = match.match_sets
+                .sort((a, b) => a.set_number - b.set_number)
+                .map(s => `${s.player_score}-${s.opponent_score}`)
+                .join(', ')
+              const isConfirming = confirmingId === match.id
+              const isDisputing = disputingId === match.id
+              const wasDisputed = disputedId === match.id
+
+              return (
+                <div key={match.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-800 dark:text-white truncate">
+                        {creatorName} recorded a match against you
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                        {score} · {formatDate(match.played_at)}
+                      </p>
+                    </div>
+                    <Clock className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                  </div>
+                  {wasDisputed ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                      Match marked as disputed. It won&apos;t appear on either profile publicly.
+                    </p>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          setConfirmingId(match.id)
+                          await confirmMatch(match.id)
+                          setConfirmingId(null)
+                        }}
+                        disabled={isConfirming || isDisputing}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg text-sm transition-all disabled:opacity-50"
+                      >
+                        {isConfirming ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                        Confirm
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setDisputingId(match.id)
+                          await disputeMatch(match.id)
+                          setDisputingId(null)
+                          setDisputedId(match.id)
+                        }}
+                        disabled={isConfirming || isDisputing}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 font-semibold rounded-lg text-sm transition-all disabled:opacity-50"
+                      >
+                        {isDisputing ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <X className="w-4 h-4" />
+                        )}
+                        Dispute
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Demo Banner for Guest Users */}
       {isGuest && (
         <div className="px-6 mt-6">
@@ -547,6 +636,12 @@ export default function DashboardClient() {
                     )}
                     <div className="flex items-center gap-2 flex-wrap mt-1">
                       <span className="text-sm text-gray-500 dark:text-gray-400">{match.formattedDate}</span>
+                      {match.isOwner && match.confirmation_status === 'pending' && (
+                        <span className="text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0">
+                          <Clock className="w-2.5 h-2.5" />
+                          Awaiting Confirmation
+                        </span>
+                      )}
                       {match.match_type === 'doubles' && match.isOwner && (match.partner_name || match.partnerProfile) && (
                         <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[100px]">
                           w/{' '}

@@ -49,6 +49,7 @@ function RecordMatchContent() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [recentPlayers, setRecentPlayers] = useState<Profile[]>([])
+  const [saveResult, setSaveResult] = useState<{ matchId: string; isPending: boolean; opponentName: string } | null>(null)
 
   // Check if user is logged in and load match data if editing
   useEffect(() => {
@@ -325,6 +326,7 @@ function RecordMatchContent() {
         router.push(`/story-card?matchId=${matchId}`)
       } else {
         // Insert new match
+        const hasLinkedOpponent = !!opponentUser?.id
         const { data: matchData, error: matchError } = await supabase
           .from('matches')
           .insert({
@@ -340,6 +342,7 @@ function RecordMatchContent() {
             played_at: date,
             group_id: selectedGroupId,
             visibility,
+            confirmation_status: hasLinkedOpponent ? 'pending' : 'auto',
           })
           .select()
           .single()
@@ -375,8 +378,18 @@ function RecordMatchContent() {
           is_guest: false,
         })
 
-        // Navigate to story card with match ID
-        router.push(`/story-card?matchId=${matchData.id}`)
+        if (hasLinkedOpponent) {
+          // Show pending confirmation notice before navigating to story card
+          setSaveResult({
+            matchId: matchData.id,
+            isPending: true,
+            opponentName: opponentUser?.full_name || opponentUser?.username || opponent.trim(),
+          })
+          setIsSubmitting(false)
+        } else {
+          // Navigate to story card with match ID
+          router.push(`/story-card?matchId=${matchData.id}`)
+        }
       }
 
     } catch (err) {
@@ -384,6 +397,44 @@ function RecordMatchContent() {
       setError('Something went wrong. Please try again.')
       setIsSubmitting(false)
     }
+  }
+
+  // Show save result panel for linked-opponent matches (pending confirmation)
+  if (saveResult) {
+    return (
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 flex flex-col">
+        <div className="bg-yellow-500 px-4 pb-4 flex items-center gap-4 header-safe-area">
+          <h1 className="text-xl font-bold text-gray-900">Match Recorded</h1>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-6">
+          <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center text-4xl">
+            🎾
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Match Recorded!</h2>
+            {saveResult.isPending && (
+              <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+                Waiting for <span className="font-semibold text-gray-700 dark:text-gray-300">{saveResult.opponentName}</span> to confirm before it appears publicly on either profile.
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <Link
+              href={`/story-card?matchId=${saveResult.matchId}`}
+              className="w-full btn-primary text-center"
+            >
+              Create Story Card →
+            </Link>
+            <Link
+              href="/dashboard"
+              className="w-full py-3 text-center text-gray-600 dark:text-gray-400 font-medium hover:text-gray-800 dark:hover:text-gray-200"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Loading state for edit mode
