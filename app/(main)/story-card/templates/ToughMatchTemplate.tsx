@@ -49,15 +49,9 @@ export const ToughMatchTemplate = forwardRef<HTMLDivElement, TemplateProps>(
         />
 
         <div className="relative z-10 h-full flex flex-col px-6 py-7">
-          {/* Top: icon + close match chip */}
-          <div className="flex items-center justify-between mb-5">
+          {/* Top: icon */}
+          <div className="mb-5">
             <span className="text-3xl leading-none">⚔️</span>
-            <div
-              className="px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase"
-              style={{ background: 'rgba(249,115,22,0.18)', color: '#f97316', border: '1px solid rgba(249,115,22,0.35)' }}
-            >
-              Close Match
-            </div>
           </div>
 
           {/* Headline */}
