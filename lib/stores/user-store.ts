@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
 import { calculateAchievements, type Achievement } from '@/lib/achievements'
+import { calculateGrowthScore, type GrowthLabel } from '@/lib/utils/growth-score'
 
 const CACHE_KEY = 'matchpost_user_cache'
 const CACHE_VERSION = 1
@@ -94,6 +95,8 @@ interface UserState {
     streak: number
     longestStreak: number
     monthlyData: MonthlyData[]
+    growthScore: number
+    growthLabel: GrowthLabel
   }
   achievements: Achievement[]
   pendingAchievements: Achievement[]  // Newly unlocked, not yet toasted
@@ -117,6 +120,8 @@ const initialStats = {
   streak: 0,
   longestStreak: 0,
   monthlyData: [] as MonthlyData[],
+  growthScore: 0,
+  growthLabel: 'Beginner' as GrowthLabel,
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -468,5 +473,16 @@ function calculateStats(matches: MatchWithSets[]) {
     monthlyData.push({ month: key, ...value })
   })
 
-  return { totalMatches, wins, losses, winRate, streak, longestStreak, monthlyData }
+  // Count recent matches (last 30 days) for growth score consistency component
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+  const recentMatches = matches.filter(m => new Date(m.played_at).getTime() >= thirtyDaysAgo).length
+
+  const { score: growthScore, label: growthLabel } = calculateGrowthScore({
+    totalMatches,
+    winRate,
+    longestStreak,
+    recentMatches,
+  })
+
+  return { totalMatches, wins, losses, winRate, streak, longestStreak, monthlyData, growthScore, growthLabel }
 }

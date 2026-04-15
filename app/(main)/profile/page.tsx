@@ -169,8 +169,8 @@ export default function ProfilePage() {
               <div className="text-xs text-gray-500 dark:text-gray-400">Losses</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats.winRate}%</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Win Rate</div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats.growthScore}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Growth</div>
             </div>
           </div>
         </div>

@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, MapPin, Trophy, User, Swords, Share2, Flame, ChevronDown, Settings } from 'lucide-react'
+import { ArrowLeft, MapPin, Trophy, User, Swords, Share2, Flame, ChevronDown, Settings, Info } from 'lucide-react'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
+import { calculateGrowthScore, GROWTH_LABEL_STYLES, type GrowthLabel } from '@/lib/utils/growth-score'
 
 type MatchWithSets = Match & {
   match_sets: MatchSet[]
@@ -25,6 +26,8 @@ interface UserStats {
   winRate: number
   currentStreak: number
   longestStreak: number
+  growthScore: number
+  growthLabel: GrowthLabel
   singles: { total: number; wins: number; losses: number; winRate: number }
   doubles: { total: number; wins: number; losses: number; winRate: number }
 }
@@ -59,6 +62,7 @@ export default function ProfileClient({ username }: ProfileClientProps) {
   const [stats, setStats] = useState<UserStats>({
     totalMatches: 0, wins: 0, losses: 0, winRate: 0,
     currentStreak: 0, longestStreak: 0,
+    growthScore: 0, growthLabel: 'Beginner' as GrowthLabel,
     singles: { total: 0, wins: 0, losses: 0, winRate: 0 },
     doubles: { total: 0, wins: 0, losses: 0, winRate: 0 }
   })
@@ -189,13 +193,27 @@ export default function ProfileClient({ username }: ProfileClientProps) {
         const doublesWins = doublesMatches.filter(m => m.viewerResult === 'win').length
         const doublesLosses = doublesMatches.filter(m => m.viewerResult === 'loss').length
 
+        const winRate = total > 0 ? Math.round((wins / total) * 100) : 0
+        const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+        const recentMatchCount = processedMatches.filter(
+          m => new Date(m.played_at).getTime() >= thirtyDaysAgo
+        ).length
+        const { score: growthScore, label: growthLabel } = calculateGrowthScore({
+          totalMatches: total,
+          winRate,
+          longestStreak,
+          recentMatches: recentMatchCount,
+        })
+
         setStats({
           totalMatches: total,
           wins,
           losses,
-          winRate: total > 0 ? Math.round((wins / total) * 100) : 0,
+          winRate,
           currentStreak,
           longestStreak,
+          growthScore,
+          growthLabel,
           singles: {
             total: singlesMatches.length,
             wins: singlesWins,
@@ -808,15 +826,34 @@ export default function ProfileClient({ username }: ProfileClientProps) {
               <div className="text-2xl font-bold text-red-500 dark:text-red-400">{stats.losses}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400">Losses</div>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats.winRate}%</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Win Rate</div>
+            <div className="relative group">
+              <div className="flex items-center justify-center gap-1">
+                <div className="text-2xl font-bold text-gray-800 dark:text-white">{stats.growthScore}</div>
+                <Info className="w-3 h-3 text-gray-400 dark:text-gray-500 mt-0.5 cursor-help" />
+              </div>
+              <div className="flex items-center justify-center gap-1 mt-0.5">
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${GROWTH_LABEL_STYLES[stats.growthLabel].bg} ${GROWTH_LABEL_STYLES[stats.growthLabel].text} ${GROWTH_LABEL_STYLES[stats.growthLabel].darkBg} ${GROWTH_LABEL_STYLES[stats.growthLabel].darkText}`}>
+                  {stats.growthLabel}
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Growth</div>
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-gray-900 dark:bg-gray-700 text-white text-[10px] rounded-lg px-2.5 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center leading-relaxed">
+                Growth Score rewards activity, consistency, and improvement — not just winning
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
             </div>
           </div>
 
           {/* Streak & Match Type Stats */}
-          {(stats.currentStreak > 0 || stats.longestStreak > 0 || stats.singles.total > 0 || stats.doubles.total > 0) && (
+          {(stats.currentStreak > 0 || stats.longestStreak > 0 || stats.winRate > 0 || stats.singles.total > 0 || stats.doubles.total > 0) && (
             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex flex-wrap justify-center gap-x-5 gap-y-2">
+              {stats.winRate > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Win Rate</span>
+                  <span className="text-sm font-semibold text-gray-800 dark:text-white">{stats.winRate}%</span>
+                </div>
+              )}
               {stats.currentStreak > 0 && (
                 <div className="flex items-center gap-1.5">
                   <Flame className="w-4 h-4 text-orange-500" />
