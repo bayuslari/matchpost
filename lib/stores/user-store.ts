@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
-import { calculateAchievements, type Achievement, SEEN_ACHIEVEMENTS_KEY } from '@/lib/achievements'
+import { calculateAchievements, type Achievement } from '@/lib/achievements'
 
 const CACHE_KEY = 'matchpost_user_cache'
 const CACHE_VERSION = 1
@@ -237,8 +237,8 @@ export const useUserStore = create<UserState>((set, get) => ({
       const stats = calculateStats(statsMatches)
       const achievements = calculateAchievements(statsMatches, stats)
 
-      // Diff against seen achievements to find newly unlocked ones
-      const seenIds = getSeenAchievementIds()
+      // Diff against seen achievements (stored in profile) to find newly unlocked ones
+      const seenIds: string[] = profileData?.seen_achievement_ids ?? []
       const newlyUnlocked = achievements.filter(a => a.unlocked && !seenIds.includes(a.id))
 
       // Save to cache for next visit
@@ -346,8 +346,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     const newMatches = [match, ...matches]
     const stats = calculateStats(newMatches)
     const achievements = calculateAchievements(newMatches, stats)
-    // Check for newly unlocked achievements
-    const seenIds = getSeenAchievementIds()
+    // Check for newly unlocked achievements (use profile.seen_achievement_ids from store)
+    const seenIds: string[] = profile?.seen_achievement_ids ?? []
     const newlyUnlocked = achievements.filter(a => a.unlocked && !seenIds.includes(a.id))
     saveToCache({ profile, matches: newMatches, stats })
     set({ matches: newMatches, stats, achievements, pendingAchievements: newlyUnlocked })
@@ -363,11 +363,28 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({ matches: newMatches, stats, achievements })
   },
 
-  // Mark pending achievements as seen
+  // Mark pending achievements as seen — persist to Supabase (fire-and-forget)
   clearPendingAchievements: () => {
-    const { pendingAchievements } = get()
-    markAchievementsSeen(pendingAchievements.map(a => a.id))
-    set({ pendingAchievements: [] })
+    const { pendingAchievements, profile, matches, stats } = get()
+    if (pendingAchievements.length === 0) return
+
+    const newIds = pendingAchievements.map(a => a.id)
+    const merged = Array.from(new Set([...(profile?.seen_achievement_ids ?? []), ...newIds]))
+
+    // Update local state + cache immediately for snappy UI
+    const updatedProfile = profile ? { ...profile, seen_achievement_ids: merged } : profile
+    saveToCache({ profile: updatedProfile, matches, stats })
+    set({ pendingAchievements: [], profile: updatedProfile })
+
+    // Persist to Supabase in the background (guest: profile is null, skip)
+    if (updatedProfile) {
+      const supabase = createClient()
+      supabase
+        .from('profiles')
+        .update({ seen_achievement_ids: merged })
+        .eq('id', updatedProfile.id)
+        .then(() => {})
+    }
   },
 
   // Reset store (on logout)
@@ -387,28 +404,6 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 }))
 
-// Helper: get seen achievement IDs from localStorage
-function getSeenAchievementIds(): string[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem(SEEN_ACHIEVEMENTS_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-// Helper: mark achievement IDs as seen in localStorage
-function markAchievementsSeen(ids: string[]) {
-  if (typeof window === 'undefined') return
-  try {
-    const existing = getSeenAchievementIds()
-    const merged = Array.from(new Set([...existing, ...ids]))
-    localStorage.setItem(SEEN_ACHIEVEMENTS_KEY, JSON.stringify(merged))
-  } catch {
-    // ignore
-  }
-}
 
 // Helper function to calculate stats
 function calculateStats(matches: MatchWithSets[]) {

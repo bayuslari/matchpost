@@ -18,6 +18,7 @@ export type Database = {
           bio: string | null
           location: string | null
           skill_level: 'beginner' | 'intermediate' | 'advanced' | 'pro' | null
+          seen_achievement_ids: string[]
           created_at: string
           updated_at: string
         }
@@ -29,6 +30,7 @@ export type Database = {
           bio?: string | null
           location?: string | null
           skill_level?: 'beginner' | 'intermediate' | 'advanced' | 'pro' | null
+          seen_achievement_ids?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -40,6 +42,7 @@ export type Database = {
           bio?: string | null
           location?: string | null
           skill_level?: 'beginner' | 'intermediate' | 'advanced' | 'pro' | null
+          seen_achievement_ids?: string[]
           created_at?: string
           updated_at?: string
         }

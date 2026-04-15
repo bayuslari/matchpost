@@ -300,4 +300,3 @@ export const ACHIEVEMENT_CATEGORIES: Record<AchievementCategory, { label: string
   social:    { label: 'Social',     color: 'green'  },
 }
 
-export const SEEN_ACHIEVEMENTS_KEY = 'matchpost_seen_achievements'
