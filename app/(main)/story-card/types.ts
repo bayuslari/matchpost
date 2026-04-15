@@ -47,4 +47,5 @@ export const templates = [
   { id: 'photo-pro', name: 'Photo Pro', gradient: 'from-gray-800 to-gray-900', supportsImage: true },
   { id: 'dark', name: 'Dark', gradient: 'from-gray-900 via-gray-800 to-black', supportsImage: true },
   { id: 'minimal', name: 'Minimal', gradient: 'from-amber-700 via-orange-800 to-amber-900', supportsImage: true },
+  { id: 'tough-match', name: 'Fought Hard', gradient: 'from-[#1a1a2e] via-[#16213e] to-[#0f3460]', supportsImage: false },
 ]
