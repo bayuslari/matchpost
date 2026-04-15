@@ -21,7 +21,7 @@ import {
 
 const menuItems = [
   { icon: BarChart3, label: 'Detailed Statistics', href: '/stats', disabled: false },
-  { icon: Trophy, label: 'Achievements', href: '/achievements', disabled: true },
+  { icon: Trophy, label: 'Achievements', href: '/achievements', disabled: false },
   { icon: Camera, label: 'My Story Cards', href: '/story-cards', disabled: true },
 ]
 
@@ -34,7 +34,9 @@ const settingsItems = [
 export default function ProfilePage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
-  const { profile, stats, isLoading, initialize, reset } = useUserStore()
+  const { profile, stats, achievements, isLoading, initialize, reset } = useUserStore()
+
+  const unlockedAchievements = achievements.filter(a => a.unlocked).slice(0, 5)
 
   useEffect(() => {
     initialize()
@@ -173,6 +175,48 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Achievements Preview */}
+      {achievements.length > 0 && (
+        <div className="px-6 mt-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-yellow-500" />
+                <span className="font-semibold text-sm text-gray-800 dark:text-white">Achievements</span>
+              </div>
+              <Link
+                href="/achievements"
+                className="text-xs text-yellow-600 dark:text-yellow-400 font-medium"
+              >
+                View all →
+              </Link>
+            </div>
+            {unlockedAchievements.length > 0 ? (
+              <div className="flex gap-2 flex-wrap">
+                {unlockedAchievements.map(a => (
+                  <div
+                    key={a.id}
+                    title={a.title}
+                    className="w-10 h-10 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-lg"
+                  >
+                    {a.icon}
+                  </div>
+                ))}
+                {achievements.filter(a => a.unlocked).length > 5 && (
+                  <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400">
+                    +{achievements.filter(a => a.unlocked).length - 5}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                No achievements yet — record a match to start! 🎾
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Menu Items */}
       <div className="px-6 mt-6 space-y-3">

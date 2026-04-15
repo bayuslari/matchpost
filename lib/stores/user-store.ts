@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Match, MatchSet } from '@/lib/database.types'
+import { calculateAchievements, type Achievement, SEEN_ACHIEVEMENTS_KEY } from '@/lib/achievements'
 
 const CACHE_KEY = 'matchpost_user_cache'
 const CACHE_VERSION = 1
@@ -94,6 +95,8 @@ interface UserState {
     longestStreak: number
     monthlyData: MonthlyData[]
   }
+  achievements: Achievement[]
+  pendingAchievements: Achievement[]  // Newly unlocked, not yet toasted
 
   // Actions
   initialize: () => Promise<void>
@@ -102,6 +105,7 @@ interface UserState {
   updateProfile: (data: Partial<Profile>) => void
   addMatch: (match: MatchWithSets) => void
   removeMatch: (matchId: string) => void
+  clearPendingAchievements: () => void
   reset: () => void
 }
 
@@ -124,6 +128,8 @@ export const useUserStore = create<UserState>((set, get) => ({
   isInitialized: false,
   isInitializing: false,
   stats: initialStats,
+  achievements: [],
+  pendingAchievements: [],
 
   // Initialize user data (call once on app load)
   initialize: async () => {
@@ -229,6 +235,11 @@ export const useUserStore = create<UserState>((set, get) => ({
         return m
       })
       const stats = calculateStats(statsMatches)
+      const achievements = calculateAchievements(statsMatches, stats)
+
+      // Diff against seen achievements to find newly unlocked ones
+      const seenIds = getSeenAchievementIds()
+      const newlyUnlocked = achievements.filter(a => a.unlocked && !seenIds.includes(a.id))
 
       // Save to cache for next visit
       saveToCache({ profile: profileData, matches, stats })
@@ -237,6 +248,8 @@ export const useUserStore = create<UserState>((set, get) => ({
         profile: profileData,
         matches,
         stats,
+        achievements,
+        pendingAchievements: newlyUnlocked,
         isGuest: false,
         isLoading: false,
         isInitialized: true,
@@ -312,10 +325,11 @@ export const useUserStore = create<UserState>((set, get) => ({
       return m
     })
     const stats = calculateStats(statsMatches)
+    const achievements = calculateAchievements(statsMatches, stats)
 
     const { profile } = get()
     saveToCache({ profile, matches, stats })
-    set({ matches, stats })
+    set({ matches, stats, achievements })
   },
 
   // Update profile locally (after successful API update)
@@ -331,8 +345,12 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { matches, profile } = get()
     const newMatches = [match, ...matches]
     const stats = calculateStats(newMatches)
+    const achievements = calculateAchievements(newMatches, stats)
+    // Check for newly unlocked achievements
+    const seenIds = getSeenAchievementIds()
+    const newlyUnlocked = achievements.filter(a => a.unlocked && !seenIds.includes(a.id))
     saveToCache({ profile, matches: newMatches, stats })
-    set({ matches: newMatches, stats })
+    set({ matches: newMatches, stats, achievements, pendingAchievements: newlyUnlocked })
   },
 
   // Remove match locally
@@ -340,8 +358,16 @@ export const useUserStore = create<UserState>((set, get) => ({
     const { matches, profile } = get()
     const newMatches = matches.filter(m => m.id !== matchId)
     const stats = calculateStats(newMatches)
+    const achievements = calculateAchievements(newMatches, stats)
     saveToCache({ profile, matches: newMatches, stats })
-    set({ matches: newMatches, stats })
+    set({ matches: newMatches, stats, achievements })
+  },
+
+  // Mark pending achievements as seen
+  clearPendingAchievements: () => {
+    const { pendingAchievements } = get()
+    markAchievementsSeen(pendingAchievements.map(a => a.id))
+    set({ pendingAchievements: [] })
   },
 
   // Reset store (on logout)
@@ -355,9 +381,34 @@ export const useUserStore = create<UserState>((set, get) => ({
       isInitialized: false,
       isInitializing: false,
       stats: initialStats,
+      achievements: [],
+      pendingAchievements: [],
     })
   },
 }))
+
+// Helper: get seen achievement IDs from localStorage
+function getSeenAchievementIds(): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(SEEN_ACHIEVEMENTS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+// Helper: mark achievement IDs as seen in localStorage
+function markAchievementsSeen(ids: string[]) {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = getSeenAchievementIds()
+    const merged = Array.from(new Set([...existing, ...ids]))
+    localStorage.setItem(SEEN_ACHIEVEMENTS_KEY, JSON.stringify(merged))
+  } catch {
+    // ignore
+  }
+}
 
 // Helper function to calculate stats
 function calculateStats(matches: MatchWithSets[]) {
