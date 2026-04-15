@@ -12,6 +12,8 @@ import { ProTemplate } from './templates/ProTemplate'
 import { PhotoProTemplate } from './templates/PhotoProTemplate'
 import { DarkTemplate } from './templates/DarkTemplate'
 import { MinimalTemplate } from './templates/MinimalTemplate'
+import { ToughMatchTemplate } from './templates/ToughMatchTemplate'
+import { isToughMatch } from '@/lib/utils/match-utils'
 
 function StoryCardContent() {
   const searchParams = useSearchParams()
@@ -469,6 +471,8 @@ function StoryCardContent() {
         return <DarkTemplate ref={cardRef} {...templateProps} />
       case 'minimal':
         return <MinimalTemplate ref={cardRef} {...templateProps} />
+      case 'tough-match':
+        return <ToughMatchTemplate ref={cardRef} {...templateProps} />
       default:
         return <ProTemplate ref={cardRef} {...templateProps} />
     }
@@ -562,6 +566,24 @@ function StoryCardContent() {
         </div>
       )}
 
+      {/* Tough Match banner */}
+      {match?.result === 'loss' && isToughMatch(match.match_sets) && (
+        <div className="mx-6 mb-4 rounded-xl p-3 flex items-center justify-between gap-3"
+          style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)' }}>
+          <p className="text-sm" style={{ color: '#f97316' }}>
+            This was a close match — try the Fought Hard card 💪
+          </p>
+          <button
+            type="button"
+            onClick={() => setSelectedTemplate('tough-match')}
+            className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+            style={{ background: '#f97316', color: '#fff' }}
+          >
+            Try it
+          </button>
+        </div>
+      )}
+
       {/* Preview */}
       <div className={`px-6 mb-6 ${!isDemo ? 'mt-4' : ''}`}>
         <div className="text-gray-500 dark:text-gray-400 text-sm mb-2 text-center">Preview</div>
@@ -650,6 +672,13 @@ function StoryCardContent() {
                     <div className="text-white text-[6px] font-black italic leading-none">TMP</div>
                     <div className="flex-1"></div>
                     <div className="border border-white/60 text-[5px] text-white text-center py-0.5">6-4</div>
+                  </div>
+                )}
+                {template.id === 'tough-match' && (
+                  <div className="text-center">
+                    <div className="text-lg leading-none mb-0.5">⚔️</div>
+                    <div className="text-[8px] font-black uppercase leading-none" style={{ color: '#f97316' }}>FOUGHT</div>
+                    <div className="text-[8px] font-black uppercase leading-none text-white">HARD</div>
                   </div>
                 )}
               </div>
