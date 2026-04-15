@@ -568,7 +568,7 @@ function StoryCardContent() {
 
       {/* Tough Match banner */}
       {match?.result === 'loss' && isToughMatch(match.match_sets) && (
-        <div className="mx-6 mb-4 rounded-xl p-3 flex items-center justify-between gap-3"
+        <div className="mx-6 mt-4 mb-4 rounded-xl p-3 flex items-center justify-between gap-3"
           style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)' }}>
           <p className="text-sm" style={{ color: '#f97316' }}>
             This was a close match — try the Fought Hard card 💪
